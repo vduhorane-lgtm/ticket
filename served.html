@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volcano Express – Ticket Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0c0f1a;
+      --bg2:          #131726;
+      --bg3:          #1a1f35;
+      --border:       rgba(255,255,255,0.07);
+      --border-focus: rgba(99,179,237,0.55);
+      --accent:       #5b8ff9;
+      --accent2:      #a78bfa;
+      --accent3:      #34d399;
+      --danger:       #f87171;
+      --text:         #e2e8f0;
+      --text-muted:   #8892a4;
+      --card-glow:    rgba(91,143,249,0.08);
+      --radius:       14px;
+      --radius-sm:    8px;
+      --transition:   0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ──────────────────────────────────── */
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .orb1 { width: 500px; height: 500px; background: #5b8ff9; top: -180px; left: -120px; animation-delay: 0s; }
+    .orb2 { width: 420px; height: 420px; background: #a78bfa; bottom: -150px; right: -100px; animation-delay: -7s; }
+    .orb3 { width: 300px; height: 300px; background: #34d399; top: 40%; left: 55%; animation-delay: -13s; }
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(40px, 30px) scale(1.08); }
+    }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1100px; margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    header {
+      text-align: center; margin-bottom: 48px;
+    }
+    .logo-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, rgba(91,143,249,0.15), rgba(167,139,250,0.15));
+      border: 1px solid rgba(91,143,249,0.3);
+      border-radius: 100px; padding: 8px 20px; margin-bottom: 20px;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .logo-badge .dot {
+      width: 7px; height: 7px; background: var(--accent3);
+      border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 46px);
+      font-weight: 800; line-height: 1.15;
+      background: linear-gradient(135deg, #e2e8f0 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 12px;
+    }
+    header p {
+      color: var(--text-muted); font-size: 16px; font-weight: 400;
+    }
+
+    /* ── Two-column layout ────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03);
+      transition: box-shadow var(--transition);
+    }
+    .card:hover {
+      box-shadow: 0 4px 60px rgba(91,143,249,0.1), inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::before {
+      content: ''; width: 3px; height: 16px; border-radius: 2px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent2));
+    }
+
+    /* ── Form grid ────────────────────────────────────────────── */
+    .form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    input, select {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+      width: 100%;
+    }
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99,179,237,0.12);
+      background: #1e2438;
+    }
+    input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    /* input with button inside */
+    .input-btn-row { display: flex; gap: 8px; }
+    .input-btn-row input { flex: 1; }
+
+    /* ── Buttons ──────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: var(--radius-sm); cursor: pointer;
+      font-family: inherit; font-weight: 600; font-size: 14px;
+      padding: 10px 16px; transition: all var(--transition);
+      white-space: nowrap; text-decoration: none;
+    }
+    .btn-ghost {
+      background: var(--bg3); color: var(--text-muted); border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: #222840; color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(91,143,249,0.35);
+      padding: 14px 24px; font-size: 15px;
+      width: 100%; border-radius: var(--radius-sm);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 30px rgba(91,143,249,0.55);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.5; cursor: not-allowed; transform: none;
+      box-shadow: none;
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, var(--accent3), #0ea5e9);
+      color: #fff; width: 100%;
+      box-shadow: 0 4px 20px rgba(52,211,153,0.3);
+      padding: 12px 24px;
+    }
+    .btn-download:hover {
+      box-shadow: 0 6px 30px rgba(52,211,153,0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm { padding: 8px 12px; font-size: 12px; }
+    .btn-accent {
+      background: rgba(91,143,249,0.15); color: var(--accent);
+      border: 1px solid rgba(91,143,249,0.3);
+    }
+    .btn-accent:hover { background: rgba(91,143,249,0.25); }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ── Preview panel ────────────────────────────────────────── */
+    .preview-panel { position: sticky; top: 24px; }
+
+    .preview-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 300px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
+    }
+    .preview-empty {
+      text-align: center; padding: 40px 20px; color: var(--text-muted);
+    }
+    .preview-empty svg { margin-bottom: 16px; opacity: 0.3; }
+    .preview-empty p { font-size: 14px; }
+
+    #preview-img {
+      width: 100%; display: none;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+
+    /* ── Spinner ──────────────────────────────────────────────── */
+    .spinner {
+      display: none; flex-direction: column; align-items: center; gap: 16px;
+      padding: 40px; color: var(--text-muted);
+    }
+    .spinner.active { display: flex; }
+    .spin-ring {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 3px solid rgba(91,143,249,0.2);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 999;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 20px;
+      font-size: 14px; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      transform: translateY(20px); opacity: 0;
+      transition: all 0.3s ease;
+      max-width: 340px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(52,211,153,0.4); }
+    .toast.error   { border-color: rgba(248,113,113,0.4); }
+    .toast-icon { font-size: 18px; }
+
+    /* ── Status badge ─────────────────────────────────────────── */
+    .status-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 12px;
+      font-size: 12px; color: var(--text-muted); min-height: 20px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.ready  { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+    .status-dot.error  { background: var(--danger); }
+    .status-dot.idle   { background: var(--text-muted); }
+
+    /* ── Section spacing ──────────────────────────────────────── */
+    .section { margin-bottom: 24px; }
+  </style>
+</head>
+
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="page">
+
+    <!-- Header -->
+    <header>
+      <div class="logo-badge">
+        <span class="dot"></span>
+        Centrika Ltd · Ticketing System
+      </div>
+      <h1>Volcano Express<br>Ticket Generator</h1>
+      <p>Fill in the passenger details below to generate a thermal-style bus ticket.</p>
+    </header>
+
+    <!-- Main layout -->
+    <div class="layout">
+
+      <!-- Left: Form -->
+      <div>
+
+        <!-- Operator info -->
+        <div class="card section">
+          <div class="card-title">Operator</div>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="company_name">Company Name</label>
+              <input id="company_name" type="text" value="Volcano Express Ltd" placeholder="Company name" />
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" type="text" value="null" placeholder="+250 7XX XXX XXX" />
+            </div>
+            <div class="field">
+              <label for="plate_no">Plate Number</label>
+              <input id="plate_no" type="text" value="RAB006U" placeholder="e.g. RAB006U" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Passenger -->
+        <div class="card section">
+          <div class="card-title">Passenger</div>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="customer">Customer Name</label>
+              <input id="customer" type="text" value="Jean" placeholder="Full name" />
+            </div>
+            <div class="field">
+              <label for="from_location">From</label>
+              <input id="from_location" type="text" value="NYABUGOGO" placeholder="Origin" />
+            </div>
+            <div class="field">
+              <label for="to_location">To</label>
+              <input id="to_location" type="text" value="MUHANGA" placeholder="Destination" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="card section">
+          <div class="card-title">Schedule</div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="dep_date">Departure Date</label>
+              <input id="dep_date" type="date" value="2025-07-02" />
+            </div>
+            <div class="field">
+              <label for="dep_time">Departure Time</label>
+              <input id="dep_time" type="time" value="14:00" />
+            </div>
+            <div class="field">
+              <label for="boarding_time">Boarding Time</label>
+              <input id="boarding_time" type="time" value="14:10" />
+            </div>
+            <div class="field">
+              <label for="seat_no">Seat Number</label>
+              <input id="seat_no" type="number" value="25" min="1" max="200" placeholder="25" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket identifiers -->
+        <div class="card section">
+          <div class="card-title">Ticket Identifiers</div>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="ticket_number">Ticket Number</label>
+              <div class="input-btn-row">
+                <input id="ticket_number" type="text" value="935953259130612713"
+                       placeholder="18-digit ticket number" style="font-family:'JetBrains Mono',monospace;" />
+                <button class="btn btn-accent btn-sm" onclick="randomize()" title="Generate random ticket number">
+                  🎲 Random
+                </button>
+              </div>
+            </div>
+            <div class="field full">
+              <label for="transaction_id">Transaction ID</label>
+              <div class="input-btn-row">
+                <input id="transaction_id" type="text" value="N88QWUK0834"
+                       placeholder="e.g. N88QWUK0834" style="font-family:'JetBrains Mono',monospace;" />
+                <button class="btn btn-ghost btn-sm" onclick="randomizeTx()" title="Random transaction ID">
+                  🎲
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financials + Staff -->
+        <div class="card section">
+          <div class="card-title">Financials &amp; Staff</div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="price">Price</label>
+              <input id="price" type="text" value="2,040RWF" placeholder="e.g. 2,040RWF" />
+            </div>
+            <div class="field">
+              <label for="cashier">Cashier Name</label>
+              <input id="cashier" type="text" value="Aimee Honorine INYIZYI NANA" placeholder="Full cashier name" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate button -->
+        <button class="btn btn-primary" id="gen-btn" onclick="generateTicket()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          Generate Ticket
+        </button>
+
+        <div class="status-row" id="status-row">
+          <div class="status-dot idle" id="status-dot"></div>
+          <span id="status-text">Ready to generate</span>
+        </div>
+      </div>
+
+      <!-- Right: Preview -->
+      <div class="preview-panel">
+        <div class="card">
+          <div class="card-title">Preview</div>
+
+          <div class="preview-box" id="preview-box">
+            <!-- Spinner -->
+            <div class="spinner" id="spinner">
+              <div class="spin-ring"></div>
+              <span>Generating ticket…</span>
+            </div>
+
+            <!-- Empty state -->
+            <div class="preview-empty" id="preview-empty">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <p>Your ticket preview<br>will appear here</p>
+            </div>
+
+            <!-- Generated image -->
+            <img id="preview-img" alt="Generated ticket preview" />
+          </div>
+
+          <!-- Download button (hidden until ticket is ready) -->
+          <div id="download-section" style="margin-top:16px; display:none;">
+            <button class="btn btn-download" id="download-btn" onclick="downloadTicket()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download PNG
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toast-icon"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+    let currentBlob = null;
+    let currentFilename = "ticket.png";
+
+    // ── API base URL: always points to Flask on port 5000 ──────
+    const API = "http://127.0.0.1:5000";
+
+    // ── Random helpers ─────────────────────────────────────────
+    function randomize() {
+      // Fully client-side: 18-digit ticket number
+      document.getElementById("ticket_number").value =
+        Array.from({length: 18}, () => Math.floor(Math.random() * 10)).join("");
+      randomizeTx();
+      flashInput("ticket_number");
+      flashInput("transaction_id");
+    }
+
+    function randomizeTx() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      document.getElementById("transaction_id").value =
+        Array.from({length:10}, () => chars[Math.floor(Math.random()*chars.length)]).join("");
+      flashInput("transaction_id");
+    }
+
+    function flashInput(id) {
+      const el = document.getElementById(id);
+      el.style.borderColor = "var(--accent3)";
+      el.style.boxShadow = "0 0 0 3px rgba(52,211,153,0.2)";
+      setTimeout(() => { el.style.borderColor = ""; el.style.boxShadow = ""; }, 800);
+    }
+
+    // ── Status helpers ─────────────────────────────────────────
+    function setStatus(type, text) {
+      const dot  = document.getElementById("status-dot");
+      const span = document.getElementById("status-text");
+      dot.className = "status-dot " + type;
+      span.textContent = text;
+    }
+
+    // ── Toast ──────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      const i = document.getElementById("toast-icon");
+      const m = document.getElementById("toast-msg");
+      i.textContent = type === "success" ? "✅" : "❌";
+      m.textContent = msg;
+      t.className = "toast " + type + " show";
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.className = "toast"; }, 3500);
+    }
+
+    // ── Generate ───────────────────────────────────────────────
+    async function generateTicket() {
+      const btn    = document.getElementById("gen-btn");
+      const spinner = document.getElementById("spinner");
+      const empty  = document.getElementById("preview-empty");
+      const img    = document.getElementById("preview-img");
+      const dlSec  = document.getElementById("download-section");
+
+      // Collect form data
+      const payload = {
+        company_name:   v("company_name"),
+        phone:          v("phone"),
+        customer:       v("customer"),
+        from_location:  v("from_location"),
+        to_location:    v("to_location"),
+        dep_date:       v("dep_date"),
+        dep_time:       v("dep_time"),
+        boarding_time:  v("boarding_time"),
+        ticket_number:  v("ticket_number"),
+        seat_no:        v("seat_no"),
+        plate_no:       v("plate_no"),
+        price:          v("price"),
+        cashier:        v("cashier"),
+        transaction_id: v("transaction_id"),
+      };
+
+      // Basic validation
+      if (!payload.customer || !payload.from_location || !payload.to_location) {
+        showToast("Please fill in customer, From and To fields.", "error");
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      btn.innerHTML = `<div class="spin-ring" style="width:18px;height:18px;border-width:2px;margin:0;"></div> Generating…`;
+      empty.style.display = "none";
+      img.style.display   = "none";
+      dlSec.style.display = "none";
+      spinner.classList.add("active");
+      setStatus("idle", "Generating ticket…");
+
+      try {
+        currentFilename = `ticket_${payload.ticket_number || "new"}.png`;
+
+        const res = await fetch(`${API}/generate`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        // Blob → object URL → preview
+        currentBlob = await res.blob();
+        const url   = URL.createObjectURL(currentBlob);
+        img.src     = url;
+        img.style.display = "block";
+        dlSec.style.display = "block";
+
+        setStatus("ready", "Ticket ready — " + new Date().toLocaleTimeString());
+        showToast("Ticket generated successfully!", "success");
+
+      } catch(e) {
+        empty.style.display = "flex";
+        setStatus("error", "Error: " + e.message);
+        showToast("Generation failed: " + e.message, "error");
+
+      } finally {
+        spinner.classList.remove("active");
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Generate Ticket`;
+      }
+    }
+
+    // ── Download ───────────────────────────────────────────────
+    function downloadTicket() {
+      if (!currentBlob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(currentBlob);
+      a.download = currentFilename;
+      a.click();
+    }
+
+    // ── Helper: get input value ────────────────────────────────
+    function v(id) {
+      return document.getElementById(id)?.value?.trim() ?? "";
+    }
+
+    // ── Auto-set today's date if blank ─────────────────────────
+    window.addEventListener("DOMContentLoaded", () => {
+      const d = document.getElementById("dep_date");
+      if (!d.value) d.value = new Date().toISOString().slice(0, 10);
+    });
+
+    // ── Enter key submits ──────────────────────────────────────
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.ctrlKey) generateTicket();
+    });
+  </script>
+</body>
+</html>

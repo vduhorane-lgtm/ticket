@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+.dockerignore
+*.log
+volcano_express_ticket.png
+sample/
+temp.js
+served.html
+implementation_plan.md
+task.md
+walkthrough.md
+download_fonts.py

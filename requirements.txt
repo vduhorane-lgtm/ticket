@@ -1,0 +1,4 @@
+Flask>=2.0.0
+Pillow>=9.0.0
+qrcode[pil]>=7.0
+# waitress is for local/Docker only — Vercel manages its own runtime
