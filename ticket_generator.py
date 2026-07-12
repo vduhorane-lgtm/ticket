@@ -23,9 +23,9 @@ import os
 #  LAYOUT CONSTANTS
 # ======================================================================
 
-TICKET_WIDTH = 760          # Total image width in pixels (~80 mm thermal paper)
-PADDING      = 28           # Left / right margin
-GAP          = 6            # Default vertical gap between elements
+TICKET_WIDTH = 576          # Total image width in pixels (~80 mm thermal paper)
+PADDING      = 24           # Left / right margin
+GAP          = 4            # Default vertical gap between elements
 BG_COLOR     = "white"
 FG_COLOR     = "black"
 
@@ -39,10 +39,10 @@ LOCAL_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 LOCAL_REG    = os.path.join(LOCAL_DIR, "CourierPrime.ttf")
 LOCAL_BOLD   = os.path.join(LOCAL_DIR, "CourierPrime-Bold.ttf")
 
-SIZE_TITLE  = 58   # "Volcano Express Ltd"
-SIZE_LARGE  = 36   # Ticket number, seat
+SIZE_TITLE  = 44   # "Volcano Express Ltd"
+SIZE_LARGE  = 28   # Ticket number, seat
 SIZE_NORMAL = 26   # Body text
-SIZE_SMALL  = 22   # Timestamp, tagline
+SIZE_SMALL  = 20   # Timestamp, tagline
 
 
 # ======================================================================
@@ -52,9 +52,9 @@ SIZE_SMALL  = 22   # Timestamp, tagline
 def _load(primary_path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont:
     """Load a TTF font; tries local, then primary, then system fallbacks, then PIL default."""
     local_path = LOCAL_BOLD if is_bold else LOCAL_REG
-    candidates = [local_path, primary_path]
+    candidates = [primary_path, local_path]
     
-    # Try local and primary paths first
+    # Try primary and local paths first
     for path in candidates:
         if path:
             try:
@@ -85,6 +85,8 @@ def load_fonts() -> dict:
         "bold_small": _load(FONT_BOLD,    SIZE_SMALL,  is_bold=True),
         "reg":        _load(FONT_REGULAR, SIZE_NORMAL, is_bold=False),
         "small":      _load(FONT_REGULAR, SIZE_SMALL,  is_bold=False),
+        "sans_bold":  _load(FONT_TITLE,   SIZE_NORMAL, is_bold=True),
+        "sans_small": _load(FONT_TITLE,   SIZE_SMALL,  is_bold=True),
     }
 
 
@@ -195,7 +197,7 @@ def generate_ticket(
     transaction_id: str = "N860WOK9834",
     # Output
     output_path:    str = "volcano_express_ticket.png",
-    qr_size:        int = 260,
+    qr_size:        int = 220,
 ) -> str:
     """
     Generate a Volcano Express Ltd / Centrika thermal-style ticket PNG.
@@ -313,15 +315,15 @@ def generate_ticket(
     icon_w = 40
     icon_h = 24
     icon_pad = 10
-    total_w = _tw(F["bold"], branding_text) + icon_w + icon_pad
+    total_w = _tw(F["sans_bold"], branding_text) + icon_w + icon_pad
     start_x = (W - total_w) // 2
     
     draw.rectangle([start_x, y + 4, start_x + icon_w, y + 4 + icon_h], outline=FG_COLOR, width=2)
     draw.ellipse([start_x + 6, y + 4 + icon_h - 4, start_x + 14, y + 4 + icon_h + 4], fill=FG_COLOR)
     draw.ellipse([start_x + icon_w - 14, y + 4 + icon_h - 4, start_x + icon_w - 6, y + 4 + icon_h + 4], fill=FG_COLOR)
     
-    draw.text((start_x + icon_w + icon_pad, y), branding_text, font=F["bold"], fill=FG_COLOR)
-    nl(max(icon_h + 8, _th(F["bold"], branding_text)), extra=8)
+    draw.text((start_x + icon_w + icon_pad, y), branding_text, font=F["sans_bold"], fill=FG_COLOR)
+    nl(max(icon_h + 8, _th(F["sans_bold"], branding_text)), extra=8)
 
     # Separator
     nl(draw_dashed_line(draw, y, F["reg"], W, P), extra=8)
@@ -409,13 +411,13 @@ def generate_ticket(
                  F["small"], P))
 
     # Powered By
-    nl(draw_left(draw, y, "Powered By Centrika Ltd.", F["bold"], P))
+    nl(draw_left(draw, y, "Powered By Centrika Ltd.", F["sans_bold"], P))
 
     # Tagline – right aligned version string
     ver_str = "v8.52 [F] [14/05/2025]"
-    text_w = _tw(F["small"], ver_str)
-    draw.text((W - P - text_w, y), ver_str, font=F["small"], fill=FG_COLOR)
-    nl(_th(F["small"], ver_str))
+    text_w = _tw(F["sans_small"], ver_str)
+    draw.text((W - P - text_w, y), ver_str, font=F["sans_small"], fill=FG_COLOR)
+    nl(_th(F["sans_small"], ver_str))
 
     # ------------------------------------------------------------------
     # Crop and save
@@ -423,8 +425,11 @@ def generate_ticket(
     final_height = y + P
     ticket = canvas.crop((0, 0, W, final_height))
 
+    # Convert to 1-bit monochrome (bilevel) to guarantee crisp text edges on thermal printers
+    ticket = ticket.convert("1")
+
     abs_path = os.path.abspath(output_path)
-    ticket.save(abs_path, dpi=(300, 300))
+    ticket.save(abs_path, dpi=(203, 203))
     print(f"Ticket saved  =>  {abs_path}  ({W} x {final_height} px)")
     return abs_path
 
