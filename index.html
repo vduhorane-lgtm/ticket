@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Volcano Express – Ticket Generator</title>
+  <title>Volcano Express â€“ Ticket Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
   <style>
-    /* ── Reset & base ─────────────────────────────────────────── */
+    /* â”€â”€ Reset & base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -40,7 +40,7 @@
       overflow-x: hidden;
     }
 
-    /* ── Animated background ──────────────────────────────────── */
+    /* â”€â”€ Animated background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .bg-orbs {
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
       overflow: hidden;
@@ -57,14 +57,14 @@
       to   { transform: translate(40px, 30px) scale(1.08); }
     }
 
-    /* ── Layout ───────────────────────────────────────────────── */
+    /* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .page {
       position: relative; z-index: 1;
       max-width: 1100px; margin: 0 auto;
       padding: 40px 24px 80px;
     }
 
-    /* ── Header ───────────────────────────────────────────────── */
+    /* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     header {
       text-align: center; margin-bottom: 48px;
     }
@@ -93,7 +93,7 @@
       color: var(--text-muted); font-size: 16px; font-weight: 400;
     }
 
-    /* ── Two-column layout ────────────────────────────────────── */
+    /* â”€â”€ Two-column layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .layout {
       display: grid;
       grid-template-columns: 1fr 380px;
@@ -104,7 +104,7 @@
       .layout { grid-template-columns: 1fr; }
     }
 
-    /* ── Card ─────────────────────────────────────────────────── */
+    /* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .card {
       background: var(--bg2);
       border: 1px solid var(--border);
@@ -126,7 +126,7 @@
       background: linear-gradient(to bottom, var(--accent), var(--accent2));
     }
 
-    /* ── Form grid ────────────────────────────────────────────── */
+    /* â”€â”€ Form grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .form-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
@@ -161,7 +161,7 @@
     .input-btn-row { display: flex; gap: 8px; }
     .input-btn-row input { flex: 1; }
 
-    /* ── Buttons ──────────────────────────────────────────────── */
+    /* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       border: none; border-radius: var(--radius-sm); cursor: pointer;
@@ -209,10 +209,10 @@
     }
     .btn-accent:hover { background: rgba(91,143,249,0.25); }
 
-    /* ── Divider ──────────────────────────────────────────────── */
+    /* â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-    /* ── Preview panel ────────────────────────────────────────── */
+    /* â”€â”€ Preview panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .preview-panel { position: sticky; top: 24px; }
 
     .preview-box {
@@ -236,7 +236,7 @@
       box-shadow: 0 8px 40px rgba(0,0,0,0.6);
     }
 
-    /* ── Spinner ──────────────────────────────────────────────── */
+    /* â”€â”€ Spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .spinner {
       display: none; flex-direction: column; align-items: center; gap: 16px;
       padding: 40px; color: var(--text-muted);
@@ -250,7 +250,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Toast ────────────────────────────────────────────────── */
+    /* â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .toast {
       position: fixed; bottom: 28px; right: 28px; z-index: 999;
       background: var(--bg2); border: 1px solid var(--border);
@@ -266,7 +266,7 @@
     .toast.error   { border-color: rgba(248,113,113,0.4); }
     .toast-icon { font-size: 18px; }
 
-    /* ── Status badge ─────────────────────────────────────────── */
+    /* â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .status-row {
       display: flex; align-items: center; gap: 8px; margin-top: 12px;
       font-size: 12px; color: var(--text-muted); min-height: 20px;
@@ -276,7 +276,7 @@
     .status-dot.error  { background: var(--danger); }
     .status-dot.idle   { background: var(--text-muted); }
 
-    /* ── Section spacing ──────────────────────────────────────── */
+    /* â”€â”€ Section spacing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .section { margin-bottom: 24px; }
   </style>
 </head>
@@ -294,7 +294,7 @@
     <header>
       <div class="logo-badge">
         <span class="dot"></span>
-        Centrika Ltd · Ticketing System
+        Centrika Ltd Â· Ticketing System
       </div>
       <h1>Volcano Express<br>Ticket Generator</h1>
       <p>Fill in the passenger details below to generate a thermal-style bus ticket.</p>
@@ -377,7 +377,7 @@
                 <input id="ticket_number" type="text" value="935953259130612713"
                        placeholder="18-digit ticket number" style="font-family:'JetBrains Mono',monospace;" />
                 <button class="btn btn-accent btn-sm" onclick="randomize()" title="Generate random ticket number">
-                  🎲 Random
+                  ðŸŽ² Random
                 </button>
               </div>
             </div>
@@ -387,7 +387,7 @@
                 <input id="transaction_id" type="text" value="N88QWUK0834"
                        placeholder="e.g. N88QWUK0834" style="font-family:'JetBrains Mono',monospace;" />
                 <button class="btn btn-ghost btn-sm" onclick="randomizeTx()" title="Random transaction ID">
-                  🎲
+                  ðŸŽ²
                 </button>
               </div>
             </div>
@@ -432,7 +432,7 @@
             <!-- Spinner -->
             <div class="spinner" id="spinner">
               <div class="spin-ring"></div>
-              <span>Generating ticket…</span>
+              <span>Generating ticketâ€¦</span>
             </div>
 
             <!-- Empty state -->
@@ -483,10 +483,10 @@
     let currentBlob = null;
     let currentFilename = "ticket.png";
 
-    // ── API base URL: always points to Flask on port 5000 ──────
-    const API = "http://127.0.0.1:5000";
+    // â”€â”€ API base URL: always points to Flask on port 5000 â”€â”€â”€â”€â”€â”€
+    const API = "/api"; // Vercel: routes to api/ serverless functions
 
-    // ── Random helpers ─────────────────────────────────────────
+    // â”€â”€ Random helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function randomize() {
       // Fully client-side: 18-digit ticket number
       document.getElementById("ticket_number").value =
@@ -510,7 +510,7 @@
       setTimeout(() => { el.style.borderColor = ""; el.style.boxShadow = ""; }, 800);
     }
 
-    // ── Status helpers ─────────────────────────────────────────
+    // â”€â”€ Status helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function setStatus(type, text) {
       const dot  = document.getElementById("status-dot");
       const span = document.getElementById("status-text");
@@ -518,20 +518,20 @@
       span.textContent = text;
     }
 
-    // ── Toast ──────────────────────────────────────────────────
+    // â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let toastTimer;
     function showToast(msg, type = "success") {
       const t = document.getElementById("toast");
       const i = document.getElementById("toast-icon");
       const m = document.getElementById("toast-msg");
-      i.textContent = type === "success" ? "✅" : "❌";
+      i.textContent = type === "success" ? "âœ…" : "âŒ";
       m.textContent = msg;
       t.className = "toast " + type + " show";
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { t.className = "toast"; }, 3500);
     }
 
-    // ── Generate ───────────────────────────────────────────────
+    // â”€â”€ Generate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function generateTicket() {
       const btn    = document.getElementById("gen-btn");
       const spinner = document.getElementById("spinner");
@@ -565,12 +565,12 @@
 
       // Show loading state
       btn.disabled = true;
-      btn.innerHTML = `<div class="spin-ring" style="width:18px;height:18px;border-width:2px;margin:0;"></div> Generating…`;
+      btn.innerHTML = `<div class="spin-ring" style="width:18px;height:18px;border-width:2px;margin:0;"></div> Generatingâ€¦`;
       empty.style.display = "none";
       img.style.display   = "none";
       dlSec.style.display = "none";
       spinner.classList.add("active");
-      setStatus("idle", "Generating ticket…");
+      setStatus("idle", "Generating ticketâ€¦");
 
       try {
         currentFilename = `ticket_${payload.ticket_number || "new"}.png`;
@@ -586,14 +586,14 @@
           throw new Error(err.error || `HTTP ${res.status}`);
         }
 
-        // Blob → object URL → preview
+        // Blob â†’ object URL â†’ preview
         currentBlob = await res.blob();
         const url   = URL.createObjectURL(currentBlob);
         img.src     = url;
         img.style.display = "block";
         dlSec.style.display = "flex";
 
-        setStatus("ready", "Ticket ready — " + new Date().toLocaleTimeString());
+        setStatus("ready", "Ticket ready â€” " + new Date().toLocaleTimeString());
         showToast("Ticket generated successfully!", "success");
 
       } catch(e) {
@@ -608,7 +608,7 @@
       }
     }
 
-    // ── Print ──────────────────────────────────────────────────
+    // â”€â”€ Print â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function printTicket() {
       if (!currentBlob) return;
       const url = URL.createObjectURL(currentBlob);
@@ -639,7 +639,7 @@
       };
     }
 
-    // ── Download ───────────────────────────────────────────────
+    // â”€â”€ Download â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function downloadTicket() {
       if (!currentBlob) return;
       const a = document.createElement("a");
@@ -648,21 +648,22 @@
       a.click();
     }
 
-    // ── Helper: get input value ────────────────────────────────
+    // â”€â”€ Helper: get input value â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function v(id) {
       return document.getElementById(id)?.value?.trim() ?? "";
     }
 
-    // ── Auto-set today's date if blank ─────────────────────────
+    // â”€â”€ Auto-set today's date if blank â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     window.addEventListener("DOMContentLoaded", () => {
       const d = document.getElementById("dep_date");
       if (!d.value) d.value = new Date().toISOString().slice(0, 10);
     });
 
-    // ── Enter key submits ──────────────────────────────────────
+    // â”€â”€ Enter key submits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && e.ctrlKey) generateTicket();
     });
   </script>
 </body>
 </html>
+
