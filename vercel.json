@@ -3,8 +3,7 @@
     "api/generate.py": {
       "runtime": "python3.11",
       "memory": 1024,
-      "maxDuration": 30,
-      "includeFiles": "ticket_generator.py,fonts/**"
+      "maxDuration": 30
     },
     "api/random_ticket.py": {
       "runtime": "python3.11",
