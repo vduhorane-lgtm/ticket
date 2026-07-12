@@ -32,6 +32,7 @@ FG_COLOR     = "black"
 # Windows Courier New paths (closest to thermal receipt look)
 FONT_REGULAR = "C:/Windows/Fonts/cour.ttf"
 FONT_BOLD    = "C:/Windows/Fonts/courbd.ttf"
+FONT_TITLE   = "C:/Windows/Fonts/arialbd.ttf"
 
 # Local bundled Courier Prime fonts
 LOCAL_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
@@ -78,7 +79,7 @@ def _load(primary_path: str, size: int, is_bold: bool = False) -> ImageFont.Free
 
 def load_fonts() -> dict:
     return {
-        "title":      _load(FONT_BOLD,    SIZE_TITLE,  is_bold=True),
+        "title":      _load(FONT_TITLE,   SIZE_TITLE,  is_bold=True),
         "large":      _load(FONT_BOLD,    SIZE_LARGE,  is_bold=True),
         "bold":       _load(FONT_BOLD,    SIZE_NORMAL, is_bold=True),
         "bold_small": _load(FONT_BOLD,    SIZE_SMALL,  is_bold=True),
@@ -132,6 +133,13 @@ def draw_dashed_line(draw, y: int, font, width: int, padding: int) -> int:
     draw.text((padding, y), line, font=font, fill=FG_COLOR)
     return _th(font, line)
 
+def draw_star_dash_line(draw, y: int, font, width: int, padding: int) -> int:
+    char_w = max(_tw(font, "*-"), 1)
+    n = (width - 2 * padding) // char_w
+    line = "*-" * n + "*"
+    draw.text((padding, y), line, font=font, fill=FG_COLOR)
+    return _th(font, line)
+
 
 def draw_hash_line(draw, y: int, font, width: int, padding: int) -> int:
     char_w = max(_tw(font, "#"), 1)
@@ -181,10 +189,10 @@ def generate_ticket(
     # Financials
     price:          str = "2,040RWF",
     # Staff
-    cashier:        str = "Aimee Honorine INYIZYI NANA",
+    cashier:        str = "Aimee Honorine UWIZEYIMANA",
     # System
-    timestamp:      str = "2025-07-02 13:50:57",
-    transaction_id: str = "N88QWUK0834",
+    timestamp:      str = "2026-07-02 13:59:57",
+    transaction_id: str = "N860WOK9834",
     # Output
     output_path:    str = "volcano_express_ticket.png",
     qr_size:        int = 260,
@@ -207,10 +215,14 @@ def generate_ticket(
     )
     qr_img = build_qr(qr_data, qr_size)
 
-    # Split cashier name onto two lines if > 3 words
-    words = cashier.split()
-    cashier_l1 = " ".join(words[:3])
-    cashier_l2 = " ".join(words[3:]) if len(words) > 3 else ""
+    # Split cashier name onto two lines
+    if "UWIZEYIMANA" in cashier:
+        cashier_l1 = cashier.replace("UWIZEYIMANA", "UWIZEYI")
+        cashier_l2 = "MANA"
+    else:
+        words = cashier.split()
+        cashier_l1 = " ".join(words[:3])
+        cashier_l2 = " ".join(words[3:]) if len(words) > 3 else ""
 
     # Draw onto a tall canvas; crop at the end
     canvas = Image.new("RGB", (W, 2600), BG_COLOR)
@@ -233,20 +245,20 @@ def generate_ticket(
     nl(draw_left(draw, y, f"Phone : {phone}", F["reg"], P))
 
     # Separator line
-    nl(draw_dashed_line(draw, y, F["reg"], W, P), extra=4)
+    nl(draw_star_dash_line(draw, y, F["reg"], W, P), extra=4)
 
     # Customer
-    nl(draw_left(draw, y, f"Customer: {customer}", F["reg"], P))
+    nl(draw_left(draw, y, f"Customer : {customer}", F["reg"], P))
 
     # From / To – bold labels and values to match sample
     nl(draw_two_col(draw, y,
-                    f"From :{from_location}", F["bold"],
-                    f"To :{to_location}",     F["bold"],
+                    f"From : {from_location}", F["bold"],
+                    f"To : {to_location}",     F["bold"],
                     W, P))
 
-    # Column header: Dep. Date/Time  |  Boarding Time
+    # Column header: Dept. Date/Time  |  Boarding Time
     nl(draw_two_col(draw, y,
-                    "Dep. Date/Time", F["bold"],
+                    "Dept. Date/Time", F["bold"],
                     "Boarding Time",  F["bold"],
                     W, P))
 
@@ -256,10 +268,10 @@ def generate_ticket(
                     boarding_time,            F["reg"],
                     W, P))
 
-    # Column header: Ticket Number  |  S.NO
+    # Column header: Ticket Number  |  S.No
     nl(draw_two_col(draw, y,
                     "Ticket Number", F["bold"],
-                    "S.NO",          F["bold"],
+                    "S.No",          F["bold"],
                     W, P))
 
     # Values (large bold): ticket number  |  seat
@@ -295,9 +307,21 @@ def generate_ticket(
                      f"{timestamp}  {transaction_id}",
                      F["small"], W), extra=6)
 
-    # Centrika branding
-    nl(draw_centered(draw, y, "A Product of  CENTRIKA LTD", F["bold"], W),
-       extra=8)
+    # Centrika branding & SafariBus icon
+    branding_text = "SafariBus A Product of CENTRIKA LTD"
+    
+    icon_w = 40
+    icon_h = 24
+    icon_pad = 10
+    total_w = _tw(F["bold"], branding_text) + icon_w + icon_pad
+    start_x = (W - total_w) // 2
+    
+    draw.rectangle([start_x, y + 4, start_x + icon_w, y + 4 + icon_h], outline=FG_COLOR, width=2)
+    draw.ellipse([start_x + 6, y + 4 + icon_h - 4, start_x + 14, y + 4 + icon_h + 4], fill=FG_COLOR)
+    draw.ellipse([start_x + icon_w - 14, y + 4 + icon_h - 4, start_x + icon_w - 6, y + 4 + icon_h + 4], fill=FG_COLOR)
+    
+    draw.text((start_x + icon_w + icon_pad, y), branding_text, font=F["bold"], fill=FG_COLOR)
+    nl(max(icon_h + 8, _th(F["bold"], branding_text)), extra=8)
 
     # Separator
     nl(draw_dashed_line(draw, y, F["reg"], W, P), extra=8)
@@ -307,9 +331,9 @@ def generate_ticket(
     # ------------------------------------------------------------------
 
     for line in [
-        "Kugenda hamwwe Like yavu kugenza",
-        "urugendo ruranzeiyo/cumma umuco no",
-        "wano ukarwema ntasubiriwe",
+        "Mugenzi gumana tike yawe kugeza",
+        "urugendo rurangiye/cunga umuzigo",
+        "wawe Ukerewe ntasubizwa",
     ]:
         nl(draw_left(draw, y, line, F["reg"], P))
 
@@ -328,13 +352,13 @@ def generate_ticket(
 
     # From / To – bold to match sample
     nl(draw_two_col(draw, y,
-                    f"From :{from_location}", F["bold"],
-                    f"To :{to_location}",     F["bold"],
+                    f"From : {from_location}", F["bold"],
+                    f"To : {to_location}",     F["bold"],
                     W, P))
 
-    # Dep. Date/Time  |  Boarding Time labels
+    # Dept. Date/Time  |  Boarding Time labels
     nl(draw_two_col(draw, y,
-                    "Dep. Date/Time", F["bold"],
+                    "Dept. Date/Time", F["bold"],
                     "Boarding Time",  F["bold"],
                     W, P))
 
@@ -344,10 +368,10 @@ def generate_ticket(
                     boarding_time,            F["reg"],
                     W, P))
 
-    # Ticket Number  |  S.NO labels
+    # Ticket Number  |  S.No labels
     nl(draw_two_col(draw, y,
                     "Ticket Number", F["bold"],
-                    "S.NO",          F["bold"],
+                    "S.No",          F["bold"],
                     W, P))
 
     # Values (large bold)
@@ -387,10 +411,11 @@ def generate_ticket(
     # Powered By
     nl(draw_left(draw, y, "Powered By Centrika Ltd.", F["bold"], P))
 
-    # Tagline – centered
-    nl(draw_centered(draw, y,
-                     "*** Be On Time, Save Lives!***",
-                     F["small"], W))
+    # Tagline – right aligned version string
+    ver_str = "v8.52 [F] [14/05/2025]"
+    text_w = _tw(F["small"], ver_str)
+    draw.text((W - P - text_w, y), ver_str, font=F["small"], fill=FG_COLOR)
+    nl(_th(F["small"], ver_str))
 
     # ------------------------------------------------------------------
     # Crop and save
@@ -415,15 +440,15 @@ if __name__ == "__main__":
         customer       = "Jean",
         from_location  = "NYABUGOGO",
         to_location    = "MUHANGA",
-        dep_date       = "2025-07-02",
+        dep_date       = "2026-07-02",
         dep_time       = "14:00",
-        boarding_time  = "14:10",
+        boarding_time  = "14:0",
         ticket_number  = "935953259130612713",
         seat_no        = "25",
         plate_no       = "RAB006U",
         price          = "2,040RWF",
-        cashier        = "Aimee Honorine INYIZYI NANA",
-        timestamp      = "2025-07-02 13:50:57",
-        transaction_id = "N88QWUK0834",
+        cashier        = "Aimee Honorine UWIZEYIMANA",
+        timestamp      = "2026-07-02 13:59:57",
+        transaction_id = "N860WOK9834",
         output_path    = "volcano_express_ticket.png",
     )
