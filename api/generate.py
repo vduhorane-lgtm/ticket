@@ -11,8 +11,13 @@ import sys
 import datetime
 import tempfile
 
-# Make the project root importable (ticket_generator.py lives there)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Robust path setup: works both locally (ticket_generator.py is at project root)
+# and on Vercel (includeFiles bundles ticket_generator.py alongside this function)
+_here = os.path.dirname(os.path.abspath(__file__))
+for _p in [_here, os.path.join(_here, "..")]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 from ticket_generator import generate_ticket  # noqa: E402
 
 
