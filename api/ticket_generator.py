@@ -231,15 +231,15 @@ def generate_ticket(
     # SECTION A – MAIN TICKET  (agent copy)
     # ==================================================================
 
-    # ── Company header – centered, large bold, underlined ─────────
+    # ── Company header – centered, large bold ────────────────────────
     title_h = draw_centered(draw, y, company_name, F["title"], W)
-    title_w = _tw(F["title"], company_name)
-    title_x = (W - title_w) // 2
-    draw_underline(draw, y + title_h + 1, title_x, title_x + title_w, thickness=2)
     nl(title_h, extra=6)
 
+    # ── Thin separator (between title and phone) ────────────────────
+    nl(draw_dashed(draw, y, F["small"], W), extra=2)
+
     # ── Phone ───────────────────────────────────────────────────────
-    nl(draw_left(draw, y, phone, F["reg"]), extra=4)
+    nl(draw_left(draw, y, phone, F["reg"]))
 
     # ── Passenger rows – left aligned, monospaced ───────────────────
     nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
