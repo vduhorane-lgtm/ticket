@@ -252,17 +252,18 @@ def generate_ticket(
     # ── PLATE No & PRICE – bold + underlined (matches sample) ────────
     y += g * 2
 
+    ascent, descent = F["bold"].getmetrics()
+    text_h = ascent + descent
+
     plate_text = f"PLATE No: {plate_no}"
     draw.text((P, y), plate_text, font=F["bold"], fill=FG_COLOR)
-    ph = _th(F["bold"], plate_text)
-    draw_underline(draw, y + ph + 1, P, P + _tw(F["bold"], plate_text), thickness=2)
-    nl(ph, extra=3)
+    draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], plate_text), thickness=2)
+    nl(text_h, extra=2)
 
     price_text = f"PRICE: {price}"
     draw.text((P, y), price_text, font=F["bold"], fill=FG_COLOR)
-    prh = _th(F["bold"], price_text)
-    draw_underline(draw, y + prh + 1, P, P + _tw(F["bold"], price_text), thickness=2)
-    nl(prh, extra=8)
+    draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], price_text), thickness=2)
+    nl(text_h, extra=6)
 
     # ── QR Code – centered ───────────────────────────────────────────
     y += g * 3
