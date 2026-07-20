@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Flask web server for the Volcano Express Ltd Ticket Generator.
-Serves the frontend and handles ticket generation via POST /generate
+Flask web server for the SU DIRECT Ticket Generator.
+Serves the frontend and handles ticket generation via POST /api/generate or POST /generate
 """
-import sys, io
+import sys
+import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
-from flask import Flask, request, send_file, jsonify, after_this_request
-from functools import wraps
-import io
+from flask import Flask, request, send_file, jsonify
 import random
-import string
 import datetime
 from ticket_generator import generate_ticket
-import tempfile, os
+import tempfile
+import os
 
 app = Flask(__name__)
 
@@ -28,7 +27,9 @@ def cors(response):
 
 app.after_request(cors)
 
+@app.route("/api/generate", methods=["OPTIONS"])
 @app.route("/generate", methods=["OPTIONS"])
+@app.route("/api/random_ticket", methods=["OPTIONS"])
 @app.route("/random_ticket", methods=["OPTIONS"])
 def handle_options():
     """Pre-flight CORS requests from browser."""
@@ -42,13 +43,15 @@ with open(os.path.join(os.path.dirname(__file__), "index.html"), encoding="utf-8
 def index():
     return HTML_TEMPLATE
 
+@app.route("/api/random_ticket", methods=["GET"])
 @app.route("/random_ticket", methods=["GET"])
 def random_ticket():
-    """Return a random 18-digit ticket number and 8-char transaction ID."""
-    ticket_num = "".join(random.choices(string.digits, k=18))
-    tx_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
+    """Return a random 8-digit ticket number and 8-char transaction ID."""
+    ticket_num = str(random.randint(10000000, 99999999))
+    tx_id = str(random.randint(10000000, 99999999))
     return jsonify({"ticket_number": ticket_num, "transaction_id": tx_id})
 
+@app.route("/api/generate", methods=["POST"])
 @app.route("/generate", methods=["POST"])
 def generate():
     """Accept form JSON, generate the ticket PNG, return it as a download."""
@@ -63,8 +66,8 @@ def generate():
 
     try:
         generate_ticket(
-            company_name   = data.get("company_name",   "Volcano Express Ltd"),
-            phone          = data.get("phone",           "null"),
+            company_name   = data.get("company_name",   "SU DIRECT"),
+            phone          = data.get("phone",           ""),
             customer       = data.get("customer",        ""),
             from_location  = data.get("from_location",   ""),
             to_location    = data.get("to_location",     ""),
@@ -74,11 +77,14 @@ def generate():
             ticket_number  = data.get("ticket_number",   ""),
             seat_no        = data.get("seat_no",         "1"),
             plate_no       = data.get("plate_no",        ""),
-            price          = data.get("price",           "0RWF"),
+            price          = data.get("price",           "0 RWF"),
             cashier        = data.get("cashier",         ""),
+            payment_method = data.get("payment_method",  "CASH"),
             timestamp      = timestamp,
             transaction_id = data.get("transaction_id",  ""),
+            powered_by     = data.get("powered_by",      "TAP&GO/POWERED BY AC Mobility"),
             output_path    = tmp.name,
+            qr_size        = int(data.get("qr_size", 210)) if data.get("qr_size") else 210,
         )
         return send_file(
             tmp.name,
@@ -99,7 +105,7 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_DEBUG", "True").lower() in ("true", "1", "yes")
-    print("Volcano Express Ticket Generator")
+    print("SU DIRECT Ticket Generator")
     print(f"Open  --> http://{host}:{port}")
     print(f"(also works via Live Server -- API calls go to port {port})")
     app.run(debug=debug, host=host, port=port)

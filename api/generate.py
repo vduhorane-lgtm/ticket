@@ -59,8 +59,8 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             generate_ticket(
-                company_name   = data.get("company_name",   "Volcano Express Ltd"),
-                phone          = data.get("phone",           "null"),
+                company_name   = data.get("company_name",   "SU DIRECT"),
+                phone          = data.get("phone",           ""),
                 customer       = data.get("customer",        ""),
                 from_location  = data.get("from_location",   ""),
                 to_location    = data.get("to_location",     ""),
@@ -70,11 +70,14 @@ class handler(BaseHTTPRequestHandler):
                 ticket_number  = data.get("ticket_number",   ""),
                 seat_no        = data.get("seat_no",         "1"),
                 plate_no       = data.get("plate_no",        ""),
-                price          = data.get("price",           "0RWF"),
+                price          = data.get("price",           "0 RWF"),
                 cashier        = data.get("cashier",         ""),
+                payment_method = data.get("payment_method",  "CASH"),
                 timestamp      = timestamp,
                 transaction_id = data.get("transaction_id",  ""),
+                powered_by     = data.get("powered_by",      "TAP&GO/POWERED BY AC Mobility"),
                 output_path    = tmp.name,
+                qr_size        = int(data.get("qr_size", 210)) if data.get("qr_size") else 210,
             )
 
             with open(tmp.name, "rb") as f:

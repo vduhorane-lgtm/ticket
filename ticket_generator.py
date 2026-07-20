@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 ============================================================
-  Volcano Express Ltd - Bus Ticket Generator
-  Powered by Centrika Ltd ticketing format
-  Generates a thermal-style receipt PNG matching the sample.
+  Rwanda Intercity & City Bus Ticket Generator
+  Matches: Volcano / Horizon / Ritco / AC Group (SU DIRECT)
+  Thermal 58 mm paper  (~384 px wide @ 167 dpi)
+  Single cut length: 8 – 12 cm
 ============================================================
 
 Dependencies:
@@ -20,73 +21,61 @@ import os
 
 
 # ======================================================================
-#  LAYOUT CONSTANTS
+#  PAPER / LAYOUT CONSTANTS
 # ======================================================================
 
-TICKET_WIDTH = 576          # Total image width in pixels (~80 mm thermal paper)
-PADDING      = 24           # Left / right margin
-GAP          = 4            # Default vertical gap between elements
+# 58 mm thermal paper @ ~167 dpi  => 384 px wide
+# Physical: 384 px / 167 * 25.4 mm = ~58 mm  ✓
+TICKET_WIDTH = 384
+PADDING      = 14           # left / right margin
+GAP          = 3            # default vertical gap
 BG_COLOR     = "white"
 FG_COLOR     = "black"
 
-# Windows Courier New paths (closest to thermal receipt look)
-FONT_REGULAR = "C:/Windows/Fonts/cour.ttf"
-FONT_BOLD    = "C:/Windows/Fonts/courbd.ttf"
-FONT_TITLE   = "C:/Windows/Fonts/arialbd.ttf"
+# ── Font paths ─────────────────────────────────────────────────────────
+LOCAL_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+_CP_REG    = os.path.join(LOCAL_DIR, "CourierPrime.ttf")
+_CP_BOLD   = os.path.join(LOCAL_DIR, "CourierPrime-Bold.ttf")
+_WIN_REG   = "C:/Windows/Fonts/cour.ttf"
+_WIN_BOLD  = "C:/Windows/Fonts/courbd.ttf"
+_WIN_SANS  = "C:/Windows/Fonts/arialbd.ttf"
 
-# Local bundled Courier Prime fonts
-LOCAL_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
-LOCAL_REG    = os.path.join(LOCAL_DIR, "CourierPrime.ttf")
-LOCAL_BOLD   = os.path.join(LOCAL_DIR, "CourierPrime-Bold.ttf")
-
-SIZE_TITLE  = 44   # "Volcano Express Ltd"
-SIZE_LARGE  = 28   # Ticket number, seat
-SIZE_NORMAL = 26   # Body text
-SIZE_SMALL  = 20   # Timestamp, tagline
+# ── Font sizes (px) – tuned for 58 mm paper, 8-12 cm cut length ──────
+# At 203 dpi: 1 mm ≈ 8 px  |  2.5 mm body = 20 px  |  header 4 mm = 32 px
+SIZE_TITLE  = 30    # Company name header  (~4 mm tall)
+SIZE_NORMAL = 19    # Body rows            (~2.4 mm)
+SIZE_BOLD   = 19    # Bold rows            (same size, different weight)
+SIZE_LARGE  = 21    # Ticket No / seat     (slightly larger)
+SIZE_SMALL  = 16    # Footnotes, timestamps (~2 mm)
 
 
 # ======================================================================
-#  FONT HELPERS
+#  FONT LOADER
 # ======================================================================
 
-def _load(primary_path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont:
-    """Load a TTF font; tries local, then primary, then system fallbacks, then PIL default."""
-    local_path = LOCAL_BOLD if is_bold else LOCAL_REG
-    candidates = [primary_path, local_path]
-    
-    # Try primary and local paths first
-    for path in candidates:
-        if path:
+def _load(path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont:
+    """Load font with graceful fallback chain."""
+    local = _CP_BOLD if is_bold else _CP_REG
+    win   = _WIN_BOLD if is_bold else _WIN_REG
+    for p in [path, local, win]:
+        if p:
             try:
-                return ImageFont.truetype(path, size)
+                return ImageFont.truetype(p, size)
             except Exception:
                 pass
-
-    # Try Windows system Fonts folder fallback
-    basename = os.path.basename(primary_path)
-    try:
-        alt = os.path.join(
-            os.environ.get("WINDIR", "C:/Windows"),
-            "Fonts", basename
-        )
-        return ImageFont.truetype(alt, size)
-    except Exception:
-        pass
-
-    # Final fallback to PIL default
     return ImageFont.load_default()
 
 
 def load_fonts() -> dict:
     return {
-        "title":      _load(FONT_TITLE,   SIZE_TITLE,  is_bold=True),
-        "large":      _load(FONT_BOLD,    SIZE_LARGE,  is_bold=True),
-        "bold":       _load(FONT_BOLD,    SIZE_NORMAL, is_bold=True),
-        "bold_small": _load(FONT_BOLD,    SIZE_SMALL,  is_bold=True),
-        "reg":        _load(FONT_REGULAR, SIZE_NORMAL, is_bold=False),
-        "small":      _load(FONT_REGULAR, SIZE_SMALL,  is_bold=False),
-        "sans_bold":  _load(FONT_TITLE,   SIZE_NORMAL, is_bold=True),
-        "sans_small": _load(FONT_TITLE,   SIZE_SMALL,  is_bold=True),
+        "title":      _load(_WIN_SANS,  SIZE_TITLE,  is_bold=True),
+        "reg":        _load(_CP_REG,    SIZE_NORMAL, is_bold=False),
+        "bold":       _load(_CP_BOLD,   SIZE_BOLD,   is_bold=True),
+        "large":      _load(_CP_BOLD,   SIZE_LARGE,  is_bold=True),
+        "small":      _load(_CP_REG,    SIZE_SMALL,  is_bold=False),
+        "small_bold": _load(_CP_BOLD,   SIZE_SMALL,  is_bold=True),
+        "sans":       _load(_WIN_SANS,  SIZE_NORMAL, is_bold=True),
+        "sans_small": _load(_WIN_SANS,  SIZE_SMALL,  is_bold=True),
     }
 
 
@@ -95,71 +84,73 @@ def load_fonts() -> dict:
 # ======================================================================
 
 def _th(font, text: str = "Ay") -> int:
-    """Pixel height of text in the given font."""
     b = font.getbbox(text)
     return b[3] - b[1]
 
-
 def _tw(font, text: str) -> int:
-    """Pixel width of text in the given font."""
     b = font.getbbox(text)
     return b[2] - b[0]
 
-
-def draw_centered(draw, y: int, text: str, font, width: int) -> int:
+def draw_centered(draw, y, text, font, width) -> int:
     x = (width - _tw(font, text)) // 2
     draw.text((x, y), text, font=font, fill=FG_COLOR)
     return _th(font, text)
 
-
-def draw_left(draw, y: int, text: str, font, padding: int) -> int:
-    draw.text((padding, y), text, font=font, fill=FG_COLOR)
+def draw_left(draw, y, text, font, pad=PADDING) -> int:
+    draw.text((pad, y), text, font=font, fill=FG_COLOR)
     return _th(font, text)
 
+def draw_two_col(draw, y, left, lf, right, rf, width, pad=PADDING) -> int:
+    draw.text((pad, y), left, font=lf, fill=FG_COLOR)
+    rx = width - pad - _tw(rf, right)
+    draw.text((rx, y), right, font=rf, fill=FG_COLOR)
+    return max(_th(lf, left), _th(rf, right))
 
-def draw_two_col(draw, y: int,
-                 left: str, left_font,
-                 right: str, right_font,
-                 width: int, padding: int) -> int:
-    """Left-aligned + right-aligned text on the same row."""
-    draw.text((padding, y), left, font=left_font, fill=FG_COLOR)
-    rx = width - padding - _tw(right_font, right)
-    draw.text((rx, y), right, font=right_font, fill=FG_COLOR)
-    return max(_th(left_font, left), _th(right_font, right))
+def draw_underline(draw, y_baseline, x1, x2, thickness=2):
+    """Solid underline rule under text."""
+    draw.line([(x1, y_baseline), (x2, y_baseline)], fill=FG_COLOR, width=thickness)
 
+def draw_dashed(draw, y, font, width, pad=PADDING) -> int:
+    cw = max(_tw(font, "-"), 1)
+    n  = (width - 2 * pad) // cw
+    s  = "-" * n
+    draw.text((pad, y), s, font=font, fill=FG_COLOR)
+    return _th(font, s)
 
-def draw_dashed_line(draw, y: int, font, width: int, padding: int) -> int:
-    char_w = max(_tw(font, "-"), 1)
-    n = (width - 2 * padding) // char_w
-    line = "-" * n
-    draw.text((padding, y), line, font=font, fill=FG_COLOR)
-    return _th(font, line)
+def draw_equals(draw, y, font, width, pad=PADDING) -> int:
+    cw = max(_tw(font, "="), 1)
+    n  = (width - 2 * pad) // cw
+    s  = "=" * n
+    draw.text((pad, y), s, font=font, fill=FG_COLOR)
+    return _th(font, s)
 
-def draw_star_dash_line(draw, y: int, font, width: int, padding: int) -> int:
-    char_w = max(_tw(font, "*-"), 1)
-    n = (width - 2 * padding) // char_w
-    line = "*-" * n + "*"
-    draw.text((padding, y), line, font=font, fill=FG_COLOR)
-    return _th(font, line)
-
-
-def draw_hash_line(draw, y: int, font, width: int, padding: int) -> int:
-    char_w = max(_tw(font, "#"), 1)
-    n = (width - 2 * padding) // char_w
-    line = "#" * n
-    draw.text((padding, y), line, font=font, fill=FG_COLOR)
-    return _th(font, line)
+def wrap_text(text, font, max_width, pad=PADDING) -> list:
+    """Word-wrap text to fit within (max_width - 2*pad)."""
+    avail = max_width - 2 * pad
+    words = text.split()
+    lines, cur = [], ""
+    for w in words:
+        test = (cur + " " + w).strip()
+        if _tw(font, test) <= avail:
+            cur = test
+        else:
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines or [text]
 
 
 # ======================================================================
-#  QR CODE
+#  QR CODE BUILDER
 # ======================================================================
 
-def build_qr(data: str, px: int = 260) -> Image.Image:
+def build_qr(data: str, px: int = 210) -> Image.Image:
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=9,
+        box_size=6,
         border=2,
     )
     qr.add_data(data)
@@ -173,35 +164,43 @@ def build_qr(data: str, px: int = 260) -> Image.Image:
 # ======================================================================
 
 def generate_ticket(
-    # Operator
-    company_name:   str = "Volcano Express Ltd",
-    phone:          str = "null",
-    # Passenger
-    customer:       str = "Jean",
-    from_location:  str = "NYABUGOGO",
-    to_location:    str = "MUHANGA",
-    # Schedule
-    dep_date:       str = "2025-07-02",
-    dep_time:       str = "14:00",
-    boarding_time:  str = "14:10",
-    # Ticket identifiers
-    ticket_number:  str = "935953259130612713",
-    seat_no:        str = "25",
-    plate_no:       str = "RAB006U",
-    # Financials
-    price:          str = "2,040RWF",
-    # Staff
-    cashier:        str = "Aimee Honorine UWIZEYIMANA",
-    # System
-    timestamp:      str = "2026-07-02 13:59:57",
-    transaction_id: str = "N860WOK9834",
-    # Output
-    output_path:    str = "volcano_express_ticket.png",
-    qr_size:        int = 220,
+    # ── Operator ────────────────────────────────────────────────────────
+    company_name:   str = "SU DIRECT",
+    phone:          str = "0796604155",
+    # ── Passenger ───────────────────────────────────────────────────────
+    customer:       str = "Dinyo",
+    from_location:  str = "RUHANGO",
+    to_location:    str = "NYANZA",
+    # ── Schedule ────────────────────────────────────────────────────────
+    dep_date:       str = "Jul 16 2026",
+    dep_time:       str = "20:30",
+    boarding_time:  str = "20:00",
+    # ── Ticket IDs ──────────────────────────────────────────────────────
+    ticket_number:  str = "39086948",
+    seat_no:        str = "30",           # displayed as "Ticket count"
+    plate_no:       str = "RAK319C",
+    # ── Financials ──────────────────────────────────────────────────────
+    price:          str = "753 RWF",
+    # ── Staff ───────────────────────────────────────────────────────────
+    cashier:        str = "NIYOBUHORO",
+    payment_method: str = "CASH",
+    # ── System ──────────────────────────────────────────────────────────
+    timestamp:      str = "Jul 16 2026 19:34",
+    transaction_id: str = "39086948",
+    # ── Branding ────────────────────────────────────────────────────────
+    powered_by:     str = "TAP&GO/POWERED BY AC Mobility",
+    # ── Output ──────────────────────────────────────────────────────────
+    output_path:    str = "bus_ticket.png",
+    qr_size:        int = 210,
 ) -> str:
     """
-    Generate a Volcano Express Ltd / Centrika thermal-style ticket PNG.
-    Returns the absolute path of the saved image.
+    Generate a Rwanda-style thermal bus ticket PNG.
+    Matches Volcano / Horizon / Ritco / AC Group (SU DIRECT) format.
+    Returns the absolute path of the saved PNG.
+
+    Physical output at 203 dpi:
+      Width  : 384 px  ≈ 48 mm  (fits 58 mm roll with margins)
+      Height : auto-cropped; main section ≈ 85-105 mm (8.5–10.5 cm)
     """
 
     F = load_fonts()
@@ -209,251 +208,157 @@ def generate_ticket(
     P = PADDING
     g = GAP
 
-    # QR encodes the key ticket fields
+    # ── QR payload ──────────────────────────────────────────────────────
     qr_data = (
-        f"TKT:{ticket_number}|FROM:{from_location}|TO:{to_location}|"
-        f"DATE:{dep_date} {dep_time}|SEAT:{seat_no}|PLATE:{plate_no}|"
-        f"TS:{timestamp}|ID:{transaction_id}"
+        f"TKT:{ticket_number}|NAMES:{customer}|"
+        f"FROM:{from_location}|TO:{to_location}|"
+        f"TRAVEL:{dep_date} {dep_time}|PLATE:{plate_no}|"
+        f"PRICE:{price}|AGENT:{cashier}({payment_method})|"
+        f"PRINTED:{timestamp}"
     )
     qr_img = build_qr(qr_data, qr_size)
 
-    # Split cashier name onto two lines
-    if "UWIZEYIMANA" in cashier:
-        cashier_l1 = cashier.replace("UWIZEYIMANA", "UWIZEYI")
-        cashier_l2 = "MANA"
-    else:
-        words = cashier.split()
-        cashier_l1 = " ".join(words[:3])
-        cashier_l2 = " ".join(words[3:]) if len(words) > 3 else ""
-
-    # Draw onto a tall canvas; crop at the end
-    canvas = Image.new("RGB", (W, 2600), BG_COLOR)
+    # ── Canvas ──────────────────────────────────────────────────────────
+    canvas = Image.new("RGB", (W, 2800), BG_COLOR)
     draw   = ImageDraw.Draw(canvas)
-    y      = P
+    y      = P + 4
 
     def nl(h: int, extra: int = 0):
-        """Advance cursor by h + gap + optional extra pixels."""
         nonlocal y
         y += h + g + extra
 
-    # ------------------------------------------------------------------
-    # SECTION A  -  MAIN (AGENT) TICKET
-    # ------------------------------------------------------------------
+    # ==================================================================
+    # SECTION A – MAIN TICKET  (agent copy)
+    # ==================================================================
 
-    # Company title – large, bold, centered
-    nl(draw_centered(draw, y, company_name, F["title"], W), extra=6)
+    # ── Company header – centered, large bold, underlined ─────────
+    title_h = draw_centered(draw, y, company_name, F["title"], W)
+    title_w = _tw(F["title"], company_name)
+    title_x = (W - title_w) // 2
+    draw_underline(draw, y + title_h + 1, title_x, title_x + title_w, thickness=2)
+    nl(title_h, extra=6)
 
-    # Phone
-    nl(draw_left(draw, y, f"Phone : {phone}", F["reg"], P))
+    # ── Phone ───────────────────────────────────────────────────────
+    nl(draw_left(draw, y, phone, F["reg"]), extra=4)
 
-    # Separator line
-    nl(draw_star_dash_line(draw, y, F["reg"], W, P), extra=4)
+    # ── Passenger rows – left aligned, monospaced ───────────────────
+    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
+    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
+    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
+    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
+    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}", F["reg"]))
+    nl(draw_left(draw, y, f"Ticket count: {seat_no}",    F["reg"]))
 
-    # Customer
-    nl(draw_left(draw, y, f"Customer : {customer}", F["reg"], P))
-
-    # From / To – bold labels and values to match sample
-    nl(draw_two_col(draw, y,
-                    f"From : {from_location}", F["bold"],
-                    f"To : {to_location}",     F["bold"],
-                    W, P))
-
-    # Column header: Dept. Date/Time  |  Boarding Time
-    nl(draw_two_col(draw, y,
-                    "Dept. Date/Time", F["bold"],
-                    "Boarding Time",  F["bold"],
-                    W, P))
-
-    # Values: date + time  |  boarding time
-    nl(draw_two_col(draw, y,
-                    f"{dep_date} {dep_time}", F["reg"],
-                    boarding_time,            F["reg"],
-                    W, P))
-
-    # Column header: Ticket Number  |  S.No
-    nl(draw_two_col(draw, y,
-                    "Ticket Number", F["bold"],
-                    "S.No",          F["bold"],
-                    W, P))
-
-    # Values (large bold): ticket number  |  seat
-    nl(draw_two_col(draw, y,
-                    ticket_number, F["large"],
-                    seat_no,       F["large"],
-                    W, P))
-
-    # Price row – both sides bold
-    nl(draw_two_col(draw, y,
-                    "PRICE :", F["bold"],
-                    price,     F["bold"],
-                    W, P))
-
-    # Plate No row – both sides bold
-    nl(draw_two_col(draw, y,
-                    "Plate No", F["bold"],
-                    plate_no,   F["bold"],
-                    W, P))
-
-    # Cashier (up to two lines)
-    nl(draw_left(draw, y, f"Cashier : {cashier_l1}", F["reg"], P))
-    if cashier_l2:
-        nl(draw_left(draw, y, cashier_l2, F["reg"], P))
-
-    # QR Code – centered
+    # ── PLATE No & PRICE – bold + underlined (matches sample) ────────
     y += g * 2
-    canvas.paste(qr_img, ((W - qr_img.width) // 2, y))
-    nl(qr_img.height, extra=g)
 
-    # Timestamp + transaction ID below QR
-    nl(draw_centered(draw, y,
-                     f"{timestamp}  {transaction_id}",
-                     F["small"], W), extra=6)
+    plate_text = f"PLATE No: {plate_no}"
+    draw.text((P, y), plate_text, font=F["bold"], fill=FG_COLOR)
+    ph = _th(F["bold"], plate_text)
+    draw_underline(draw, y + ph + 1, P, P + _tw(F["bold"], plate_text), thickness=2)
+    nl(ph, extra=3)
 
-    # Centrika branding & SafariBus icon
-    branding_text = "SafariBus A Product of CENTRIKA LTD"
-    
-    icon_w = 40
-    icon_h = 24
-    icon_pad = 10
-    total_w = _tw(F["sans_bold"], branding_text) + icon_w + icon_pad
-    start_x = (W - total_w) // 2
-    
-    draw.rectangle([start_x, y + 4, start_x + icon_w, y + 4 + icon_h], outline=FG_COLOR, width=2)
-    draw.ellipse([start_x + 6, y + 4 + icon_h - 4, start_x + 14, y + 4 + icon_h + 4], fill=FG_COLOR)
-    draw.ellipse([start_x + icon_w - 14, y + 4 + icon_h - 4, start_x + icon_w - 6, y + 4 + icon_h + 4], fill=FG_COLOR)
-    
-    draw.text((start_x + icon_w + icon_pad, y), branding_text, font=F["sans_bold"], fill=FG_COLOR)
-    nl(max(icon_h + 8, _th(F["sans_bold"], branding_text)), extra=8)
+    price_text = f"PRICE: {price}"
+    draw.text((P, y), price_text, font=F["bold"], fill=FG_COLOR)
+    prh = _th(F["bold"], price_text)
+    draw_underline(draw, y + prh + 1, P, P + _tw(F["bold"], price_text), thickness=2)
+    nl(prh, extra=8)
 
-    # Separator
-    nl(draw_dashed_line(draw, y, F["reg"], W, P), extra=8)
+    # ── QR Code – centered ───────────────────────────────────────────
+    y += g * 3
+    qr_x = (W - qr_img.width) // 2
+    canvas.paste(qr_img, (qr_x, y))
+    nl(qr_img.height, extra=14)
 
-    # ------------------------------------------------------------------
-    # SECTION B  -  KINYARWANDA PASSENGER NOTE
-    # ------------------------------------------------------------------
-
-    for line in [
-        "Mugenzi gumana tike yawe kugeza",
-        "urugendo rurangiye/cunga umuzigo",
-        "wawe Ukerewe ntasubizwa",
-    ]:
-        nl(draw_left(draw, y, line, F["reg"], P))
+    # ── Kinyarwanda passenger note ───────────────────────────────────
+    kiny_lines = [
+        "Mugenzi gumana itike yawe kugeza",
+        "urugendo rurangiye. Cunga umuzi",
+        "go wawe",
+        "*Ukerewe ntasubizwa",
+    ]
+    for line in kiny_lines:
+        for wl in wrap_text(line, F["reg"], W, P):
+            nl(draw_left(draw, y, wl, F["reg"]))
 
     y += g
-    nl(draw_hash_line(draw, y, F["bold"], W, P), extra=8)
 
-    # ------------------------------------------------------------------
-    # SECTION C  -  PASSENGER COPY (DUPLICATE)
-    # ------------------------------------------------------------------
+    # ── Agent name ───────────────────────────────────────────────────
+    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
 
-    # Operator name – bold, left-aligned  (UPPERCASE to match sample)
-    nl(draw_left(draw, y, "VOLCANO Express Ltd", F["bold"], P))
+    # ── Printed at ───────────────────────────────────────────────────
+    nl(draw_left(draw, y, f"Printed at: {timestamp}", F["reg"]))
 
-    # Customer
-    nl(draw_left(draw, y, f"Customer: {customer}", F["reg"], P))
+    y += g * 2
 
-    # From / To – bold to match sample
-    nl(draw_two_col(draw, y,
-                    f"From : {from_location}", F["bold"],
-                    f"To : {to_location}",     F["bold"],
-                    W, P))
+    # ── Powered-by branding ──────────────────────────────────────────
+    nl(draw_centered(draw, y, powered_by, F["sans_small"], W), extra=4)
 
-    # Dept. Date/Time  |  Boarding Time labels
-    nl(draw_two_col(draw, y,
-                    "Dept. Date/Time", F["bold"],
-                    "Boarding Time",  F["bold"],
-                    W, P))
+    # ── Tear-line separator ──────────────────────────────────────────
+    nl(draw_dashed(draw, y, F["small"], W), extra=4)
 
-    # Values
-    nl(draw_two_col(draw, y,
-                    f"{dep_date} {dep_time}", F["reg"],
-                    boarding_time,            F["reg"],
-                    W, P))
+    # ==================================================================
+    # SECTION B – PASSENGER STUB  (duplicate below tear line)
+    # ==================================================================
 
-    # Ticket Number  |  S.No labels
-    nl(draw_two_col(draw, y,
-                    "Ticket Number", F["bold"],
-                    "S.No",          F["bold"],
-                    W, P))
+    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
+    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
+    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
+    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
+    nl(draw_left(draw, y, f"PLATE No: {plate_no}",        F["reg"]))
+    nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"]))
+    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"]))
+    nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"]))
+    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
+    nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"]))
 
-    # Values (large bold)
-    nl(draw_two_col(draw, y,
-                    ticket_number, F["large"],
-                    seat_no,       F["large"],
-                    W, P))
+    y += g * 2
 
-    # Price
-    nl(draw_two_col(draw, y,
-                    "PRICE :", F["bold"],
-                    price,     F["bold"],
-                    W, P))
-
-    # Plate No
-    nl(draw_two_col(draw, y,
-                    "Plate No", F["bold"],
-                    plate_no,   F["bold"],
-                    W, P))
-
-    # Separator
-    nl(draw_dashed_line(draw, y, F["reg"], W, P), extra=4)
-
-    # Served By – VOLCANO uppercase to match sample
-    nl(draw_left(draw, y, "  Served By : VOLCANO Express Ltd", F["reg"], P))
-
-    # Cashier
-    nl(draw_left(draw, y, f"Cashier : {cashier_l1}", F["reg"], P))
-    if cashier_l2:
-        nl(draw_left(draw, y, cashier_l2, F["reg"], P))
-
-    # Timestamp + ID (left-aligned in the duplicate)
-    nl(draw_left(draw, y,
-                 f"{timestamp}  {transaction_id}",
-                 F["small"], P))
-
-    # Powered By
-    nl(draw_left(draw, y, "Powered By Centrika Ltd.", F["sans_bold"], P))
-
-    # Tagline – right aligned version string
-    ver_str = "v8.52 [F] [14/05/2025]"
-    text_w = _tw(F["sans_small"], ver_str)
-    draw.text((W - P - text_w, y), ver_str, font=F["sans_small"], fill=FG_COLOR)
-    nl(_th(F["sans_small"], ver_str))
-
-    # ------------------------------------------------------------------
-    # Crop and save
-    # ------------------------------------------------------------------
-    final_height = y + P
+    # ==================================================================
+    # CROP & SAVE
+    # ==================================================================
+    final_height = y + P + 4
     ticket = canvas.crop((0, 0, W, final_height))
 
-    # Convert to 1-bit monochrome (bilevel) to guarantee crisp text edges on thermal printers
+    # 1-bit monochrome → crisp thermal edges
     ticket = ticket.convert("1")
 
     abs_path = os.path.abspath(output_path)
     ticket.save(abs_path, dpi=(203, 203))
-    print(f"Ticket saved  =>  {abs_path}  ({W} x {final_height} px)")
+
+    w_mm = W / 203 * 25.4
+    h_mm = final_height / 203 * 25.4
+    # Section A alone (above tear line) is approx first 65-70% of height
+    main_mm = h_mm * 0.60
+    print(f"Ticket saved  =>  {abs_path}")
+    print(f"Canvas: {W} x {final_height} px  |  {w_mm:.1f} x {h_mm:.1f} mm @ 203 dpi")
+    print(f"Main section (above tear): ~{main_mm:.0f} mm ({main_mm/10:.1f} cm)")
     return abs_path
 
 
 # ======================================================================
-#  CLI ENTRY POINT  -  edit the values below to customise the ticket
+#  CLI ENTRY POINT
 # ======================================================================
 
 if __name__ == "__main__":
     generate_ticket(
-        company_name   = "Volcano Express Ltd",
-        phone          = "null",
-        customer       = "Jean",
-        from_location  = "NYABUGOGO",
-        to_location    = "MUHANGA",
-        dep_date       = "2026-07-02",
-        dep_time       = "14:00",
-        boarding_time  = "14:0",
-        ticket_number  = "935953259130612713",
-        seat_no        = "25",
-        plate_no       = "RAB006U",
-        price          = "2,040RWF",
-        cashier        = "Aimee Honorine UWIZEYIMANA",
-        timestamp      = "2026-07-02 13:59:57",
-        transaction_id = "N860WOK9834",
-        output_path    = "volcano_express_ticket.png",
+        company_name   = "SU DIRECT",
+        phone          = "0796604155",
+        customer       = "Dinyo",
+        from_location  = "RUHANGO",
+        to_location    = "NYANZA",
+        dep_date       = "Jul 16 2026",
+        dep_time       = "20:30",
+        boarding_time  = "20:00",
+        ticket_number  = "39086948",
+        seat_no        = "30",
+        plate_no       = "RAK319C",
+        price          = "753 RWF",
+        cashier        = "NIYOBUHORO",
+        payment_method = "CASH",
+        timestamp      = "Jul 16 2026 19:34",
+        transaction_id = "39086948",
+        powered_by     = "TAP&GO/POWERED BY AC Mobility",
+        output_path    = "bus_ticket.png",
+        qr_size        = 210,
     )
