@@ -299,7 +299,7 @@ def generate_ticket(
     ]
     for line, _bold in kiny_lines:
         for wl in wrap_text(line, F["reg"], W, P):
-            nl(draw_left(draw, y, wl, F["reg"]))
+            nl(draw_left(draw, y, wl, F["reg"]), extra=3)
 
     y += g
 

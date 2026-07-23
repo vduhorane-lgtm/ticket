@@ -51,7 +51,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         now       = datetime.datetime.now()
-        timestamp = data.get("timestamp") or now.strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = data.get("timestamp") or now.strftime("%b %d %Y %H:%M")
 
         # 2. Write to /tmp (Vercel) or fallback to system default temp dir (Windows/Local)
         tmp_dir = "/tmp" if os.path.exists("/tmp") else tempfile.gettempdir()
