@@ -211,10 +211,11 @@ def generate_ticket(
     # ── Branding ────────────────────────────────────────────────────────
     powered_by:     str = "TAP&GO/POWERED BY AC Mobility",
     # ── Formatting / Layout Options ─────────────────────────────────────
+    paper_width:    str = "57mm",           # "57mm" (384px - 57mmx26M) or "80mm" (576px)
     ticket_mode:    str = "original_15cm",  # "original_15cm" or "compact_8cm"
-    font_size:      int = 23,               # 23 px (11-12 pt @ 203 dpi) for original, 19 px for compact
-    line_spacing:   float = 1.4,            # 1.4 line multiplier (8px gap) for original, 1.0 (3px gap) for compact
-    qr_size:        int = 300,              # 300 px (80% width) for original, 210 px for compact
+    font_size:      int = 21,               # 21 px (11 pt @ 203 dpi) for original
+    line_spacing:   float = 1.4,            # 1.4 line multiplier
+    qr_size:        int = 325,              # 325 px (85% width) for original
     # ── Output ──────────────────────────────────────────────────────────
     output_path:    str = "bus_ticket.png",
 ) -> str:
@@ -229,21 +230,28 @@ def generate_ticket(
                compact mode  ~700 px  ≈ 85 mm (8.5 cm short physical cut)
     """
 
+    # Handle paper width (57mm = 384px, 80mm = 576px)
+    if paper_width == "80mm":
+        W = 576
+        if qr_size == 325:
+            qr_size = 480
+    else:
+        W = TICKET_WIDTH  # 384 px (57mm x 26M standard thermal roll)
+
     # Handle preset mode overrides if defaults are passed with mode
     if ticket_mode == "compact_8cm" and font_size == 21 and line_spacing == 1.4 and qr_size == 325:
         font_size = 18
         line_spacing = 1.0
-        qr_size = 220
+        qr_size = 220 if paper_width == "57mm" else 320
     elif ticket_mode == "original_15cm" and (font_size is None or font_size <= 0):
         font_size = 21
         line_spacing = 1.4
-        qr_size = 325
+        qr_size = 325 if paper_width == "57mm" else 480
 
     # Calculate gap from line spacing factor
     g = max(2, int(round((line_spacing - 1.0) * font_size + (3 if line_spacing <= 1.1 else 4))))
 
     F = load_fonts(scale=1.0, base_size=font_size)
-    W = TICKET_WIDTH
     P = PADDING
 
     # ── QR payload ──────────────────────────────────────────────────────
@@ -271,9 +279,12 @@ def generate_ticket(
 
     # ── Company header – centered, large bold ────────────────────────
     title_h = draw_centered(draw, y, company_name, F["title"], W)
-    nl(title_h, extra=int(g * 0.8))
+    nl(title_h, extra=int(g * 0.4))
 
-    # ── Phone ─────────(Direct transition, no dashed line under title)─
+    # ── Dashed line separator below header (matches original close-up sample) ─
+    nl(draw_dashed(draw, y, F["small"], W), extra=int(g * 0.4))
+
+    # ── Phone ───────────────────────────────────────────────────────
     nl(draw_left(draw, y, phone, F["reg"], W, P, canvas))
 
     # ── Passenger rows – left aligned, monospaced ───────────────────

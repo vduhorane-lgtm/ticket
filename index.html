@@ -639,6 +639,13 @@
           <div class="card-title">Thermal Paper &amp; Print Layout</div>
           <div class="form-grid">
             <div class="field full">
+              <label for="paper_width">Thermal Roll Width</label>
+              <select id="paper_width">
+                <option value="57mm" selected>🧻 57 mm × 26 M (Standard POS Roll - Matches Box)</option>
+                <option value="80mm">🧻 80 mm (Wide Desktop Thermal Printer)</option>
+              </select>
+            </div>
+            <div class="field full">
               <label for="ticket_mode">Ticket Length Preset</label>
               <select id="ticket_mode" onchange="onPresetChange()">
                 <option value="original_15cm" selected>📏 Original Long Ticket (15 cm / 58×180mm - Recommended)</option>
@@ -648,9 +655,9 @@
             <div class="field">
               <label for="font_size">Font Size</label>
               <select id="font_size">
-                <option value="23" selected>Large (11–12 pt / Original)</option>
+                <option value="21" selected>Large (11 pt / Original)</option>
                 <option value="25">Extra Large (13 pt)</option>
-                <option value="19">Small (8–9 pt / Compact)</option>
+                <option value="18">Small (8–9 pt / Compact)</option>
               </select>
             </div>
             <div class="field">
@@ -665,9 +672,9 @@
             <div class="field full">
               <label for="qr_size">QR Code Width</label>
               <select id="qr_size">
-                <option value="300" selected>Large (300 px / 80% Paper Width - Original)</option>
-                <option value="250">Medium (250 px)</option>
-                <option value="210">Small (210 px / Compact)</option>
+                <option value="325" selected>Large (325 px / 85% Paper Width - Original)</option>
+                <option value="280">Medium (280 px)</option>
+                <option value="220">Small (220 px / Compact)</option>
               </select>
             </div>
           </div>
@@ -836,13 +843,13 @@
     function onPresetChange() {
       const mode = document.getElementById("ticket_mode").value;
       if (mode === "original_15cm") {
-        document.getElementById("font_size").value = "23";
+        document.getElementById("font_size").value = "21";
         document.getElementById("line_spacing").value = "1.4";
-        document.getElementById("qr_size").value = "300";
+        document.getElementById("qr_size").value = "325";
       } else if (mode === "compact_8cm") {
-        document.getElementById("font_size").value = "19";
+        document.getElementById("font_size").value = "18";
         document.getElementById("line_spacing").value = "1.0";
-        document.getElementById("qr_size").value = "210";
+        document.getElementById("qr_size").value = "220";
       }
     }
 
@@ -872,10 +879,11 @@
         payment_method: v("payment_method") || document.getElementById("payment_method").value,
         transaction_id: v("transaction_id"),
         powered_by: document.getElementById("powered_by").value.trim(),
+        paper_width: document.getElementById("paper_width")?.value || "57mm",
         ticket_mode: document.getElementById("ticket_mode")?.value || "original_15cm",
-        font_size: parseInt(document.getElementById("font_size")?.value || "23", 10),
+        font_size: parseInt(document.getElementById("font_size")?.value || "21", 10),
         line_spacing: parseFloat(document.getElementById("line_spacing")?.value || "1.4"),
-        qr_size: parseInt(document.getElementById("qr_size")?.value || "300", 10),
+        qr_size: parseInt(document.getElementById("qr_size")?.value || "325", 10),
       };
 
       // Basic validation
