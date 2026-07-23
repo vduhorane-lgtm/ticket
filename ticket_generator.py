@@ -106,9 +106,20 @@ def draw_centered(draw, y, text, font, width) -> int:
     draw.text((x, y), text, font=font, fill=FG_COLOR)
     return _th(font, text)
 
-def draw_left(draw, y, text, font, pad=PADDING) -> int:
-    draw.text((pad, y), text, font=font, fill=FG_COLOR)
-    return _th(font, text)
+def draw_left(draw, y, text, font, width=TICKET_WIDTH, pad=PADDING, canvas=None) -> int:
+    avail = width - 2 * pad
+    tw = _tw(font, text)
+    th = _th(font, text)
+    if tw <= avail or tw == 0 or canvas is None:
+        draw.text((pad, y), text, font=font, fill=FG_COLOR)
+    else:
+        # Auto-condense text to fit within avail width cleanly (matches thermal printer font behavior)
+        txt_img = Image.new("RGBA", (tw, th + 4), (255, 255, 255, 0))
+        tdraw = ImageDraw.Draw(txt_img)
+        tdraw.text((0, 0), text, font=font, fill=FG_COLOR)
+        scaled_img = txt_img.resize((avail, th + 4), Image.BICUBIC)
+        canvas.paste(scaled_img, (pad, y), scaled_img)
+    return th
 
 def draw_two_col(draw, y, left, lf, right, rf, width, pad=PADDING) -> int:
     draw.text((pad, y), left, font=lf, fill=FG_COLOR)
@@ -219,14 +230,14 @@ def generate_ticket(
     """
 
     # Handle preset mode overrides if defaults are passed with mode
-    if ticket_mode == "compact_8cm" and font_size == 23 and line_spacing == 1.4 and qr_size == 300:
-        font_size = 19
+    if ticket_mode == "compact_8cm" and font_size == 21 and line_spacing == 1.4 and qr_size == 325:
+        font_size = 18
         line_spacing = 1.0
-        qr_size = 210
+        qr_size = 220
     elif ticket_mode == "original_15cm" and (font_size is None or font_size <= 0):
-        font_size = 23
+        font_size = 21
         line_spacing = 1.4
-        qr_size = 300
+        qr_size = 325
 
     # Calculate gap from line spacing factor
     g = max(2, int(round((line_spacing - 1.0) * font_size + (3 if line_spacing <= 1.1 else 4))))
@@ -262,33 +273,30 @@ def generate_ticket(
     title_h = draw_centered(draw, y, company_name, F["title"], W)
     nl(title_h, extra=int(g * 0.8))
 
-    # ── Thin separator (between title and phone) ────────────────────
-    nl(draw_dashed(draw, y, F["small"], W), extra=g // 2)
-
-    # ── Phone ───────────────────────────────────────────────────────
-    nl(draw_left(draw, y, phone, F["reg"]))
+    # ── Phone ─────────(Direct transition, no dashed line under title)─
+    nl(draw_left(draw, y, phone, F["reg"], W, P, canvas))
 
     # ── Passenger rows – left aligned, monospaced ───────────────────
-    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
-    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
-    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
-    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
-    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}", F["reg"]))
-    nl(draw_left(draw, y, f"Ticket count: {seat_no}",    F["reg"]))
+    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}", F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"Ticket count: {seat_no}",    F["reg"], W, P, canvas))
 
     # ── PLATE No & PRICE – bold + underlined (matches sample) ────────
-    y += g
+    y += g // 2
 
     ascent, descent = F["bold"].getmetrics()
     text_h = ascent + descent
 
     plate_text = f"PLATE No: {plate_no}"
-    draw.text((P, y), plate_text, font=F["bold"], fill=FG_COLOR)
+    draw_left(draw, y, plate_text, F["bold"], W, P, canvas)
     draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], plate_text), thickness=2)
     nl(text_h, extra=g // 2)
 
     price_text = f"PRICE: {price}"
-    draw.text((P, y), price_text, font=F["bold"], fill=FG_COLOR)
+    draw_left(draw, y, price_text, F["bold"], W, P, canvas)
     draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], price_text), thickness=2)
     nl(text_h, extra=g)
 
@@ -298,7 +306,7 @@ def generate_ticket(
     canvas.paste(qr_img, (qr_x, y))
     nl(qr_img.height, extra=g * 2)
 
-    # ── Kinyarwanda passenger note ───────────────────────────────────
+    # ── Kinyarwanda passenger note – 4 exact lines ───────────────────
     kiny_lines = [
         "Mugenzi gumana itike yawe kugeza",
         "urugendo rurangiye. Cunga umuzi",
@@ -306,16 +314,15 @@ def generate_ticket(
         "*Ukerewe ntasubizwa",
     ]
     for line in kiny_lines:
-        for wl in wrap_text(line, F["reg"], W, P):
-            nl(draw_left(draw, y, wl, F["reg"]))
+        nl(draw_left(draw, y, line, F["reg"], W, P, canvas))
 
-    y += g
+    y += g // 2
 
     # ── Agent name ───────────────────────────────────────────────────
-    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
+    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"], W, P, canvas))
 
     # ── Printed at ───────────────────────────────────────────────────
-    nl(draw_left(draw, y, f"Printed at: {timestamp}", F["reg"]))
+    nl(draw_left(draw, y, f"Printed at: {timestamp}", F["reg"], W, P, canvas))
 
     y += g * 2
 
@@ -329,16 +336,16 @@ def generate_ticket(
     # SECTION B – PASSENGER STUB  (duplicate below tear line)
     # ==================================================================
 
-    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
-    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
-    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
-    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
-    nl(draw_left(draw, y, f"PLATE No: {plate_no}",        F["reg"]))
-    nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"]))
-    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"]))
-    nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"]))
-    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
-    nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"]))
+    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"PLATE No: {plate_no}",        F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"], W, P, canvas))
+    nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"], W, P, canvas))
 
     y += g * 2
 
