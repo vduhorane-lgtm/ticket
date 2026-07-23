@@ -238,7 +238,7 @@ def generate_ticket(
     # ── Canvas ──────────────────────────────────────────────────────────
     canvas = Image.new("RGB", (W, 2800), BG_COLOR)
     draw   = ImageDraw.Draw(canvas)
-    y      = 10  # Tight short top margin (~1.2 mm) above header
+    y      = 24  # Top margin (3 mm) above header
 
     def nl(h: int, extra: int = 0):
         nonlocal y
