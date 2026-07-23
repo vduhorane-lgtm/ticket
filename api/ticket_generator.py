@@ -68,7 +68,7 @@ def _load(path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont
 
 def load_fonts(font_size_val: int = 21) -> dict:
     scale = font_size_val / 21.0
-    size_title = int(30 * scale)
+    size_title = int(24 * scale)   # original printer ROM font renders ~24px — Arial Bold 30 was too large
     size_normal = int(19 * scale)
     size_bold = int(19 * scale)
     size_large = int(font_size_val)
@@ -216,7 +216,12 @@ def generate_ticket(
     """
 
     F = load_fonts(font_size)
-    W = 576 if paper_width == "80mm" else 384
+    if paper_width in ("50mm", "5cm"):
+        W = 400  # 50 mm = 5.0 cm @ 203 DPI
+    elif paper_width == "80mm":
+        W = 576  # 80 mm = 7.2 cm @ 203 DPI
+    else:
+        W = 384  # 57 mm / 58 mm = 4.8 cm printable area @ 203 DPI
     P = PADDING
     g = max(2, int(3 * (font_size / 21.0)))
 
@@ -262,8 +267,8 @@ def generate_ticket(
     nl(draw_left(draw, y, f"TICKET ID: {ticket_number}", F["reg"]))
     nl(draw_left(draw, y, f"Ticket count: {seat_no}",    F["reg"]))
 
-    # ── PLATE No & PRICE – bold + underlined (matches sample) ────────
-    y += g * 2
+    # ── PLATE No & PRICE – bold + underlined (matches sample) ────────────────
+    y += g * 1
 
     ascent, descent = F["bold"].getmetrics()
     text_h = ascent + descent
@@ -276,37 +281,39 @@ def generate_ticket(
     price_text = f"PRICE: {price}"
     draw.text((P, y), price_text, font=F["bold"], fill=FG_COLOR)
     draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], price_text), thickness=2)
-    nl(text_h, extra=6)
+    nl(text_h, extra=2)
 
     # ── QR Code – centered ───────────────────────────────────────────
-    y += g * 3
+    y += g * 1
     qr_x = (W - qr_img.width) // 2
     canvas.paste(qr_img, (qr_x, y))
-    nl(qr_img.height, extra=14)
+    y += qr_img.height + g * 2   # advance past QR directly — skip nl() to avoid line_spacing multiplier
 
-    # ── Kinyarwanda passenger note ───────────────────────────────────
+    # ── Kinyarwanda passenger note ─────────────────────────────────────
+    # Original ticket: line 1 flush-left, line 2 indented 1 space, rest flush-left
     kiny_lines = [
-        "Mugenzi gumana itike yawe kugeza",
-        "urugendo rurangiye. Cunga umuzi",
-        "go wawe",
-        "*Ukerewe ntasubizwa",
+        ("Mugenzi gumana itike yawe kugeza", False),
+        (" urugendo rurangiye. Cunga umuzi", False),   # leading space matches original indent
+        ("go wawe",                          False),
+        ("*Ukerewe ntasubizwa",              False),
     ]
-    for line in kiny_lines:
+    for line, _bold in kiny_lines:
         for wl in wrap_text(line, F["reg"], W, P):
             nl(draw_left(draw, y, wl, F["reg"]))
 
     y += g
 
     # ── Agent name ───────────────────────────────────────────────────
-    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
+    nl(draw_left(draw, y, f"AGENT NAME:  {cashier}({payment_method})", F["reg"]))
 
     # ── Printed at ───────────────────────────────────────────────────
     nl(draw_left(draw, y, f"Printed at: {timestamp}", F["reg"]))
 
-    y += g * 2
+    y += g * 1
 
     # ── Powered-by branding ──────────────────────────────────────────
-    nl(draw_centered(draw, y, powered_by, F["sans_small"], W), extra=4)
+    # Original: normal weight regular font, left-aligned, small gap after
+    nl(draw_left(draw, y, powered_by, F["reg"]), extra=2)
 
     if ticket_mode != "compact_8cm":
         # ── Tear-line separator ──────────────────────────────────────────
@@ -324,15 +331,25 @@ def generate_ticket(
         nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"]))
         nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"]))
         nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"]))
-        nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
+        nl(draw_left(draw, y, f"AGENT NAME:  {cashier}({payment_method})", F["reg"]))
         nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"]))
 
         y += g * 2
 
     # ==================================================================
-    # CROP & SAVE
+    # CROP & SAVE TO EXACT PHYSICAL MEASUREMENTS
     # ==================================================================
-    final_height = y + P + 4
+    # Target 15 cm (150 mm) height @ 203 DPI = 1199 px for original_15cm preset
+    content_height = y + P + 4
+    if ticket_mode == "original_15cm":
+        target_15cm_px = int(150 / 25.4 * 203)  # 1199 px = 15.0 cm
+        final_height = max(content_height, target_15cm_px)
+    elif ticket_mode == "compact_8cm":
+        target_8cm_px = int(80 / 25.4 * 203)    # 639 px = 8.0 cm
+        final_height = max(content_height, target_8cm_px)
+    else:
+        final_height = content_height
+
     ticket = canvas.crop((0, 0, W, final_height))
 
     # 1-bit monochrome → crisp thermal edges
