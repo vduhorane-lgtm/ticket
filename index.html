@@ -634,6 +634,45 @@
           </div>
         </div>
 
+        <!-- Print Layout & Ticket Length Settings -->
+        <div class="card section">
+          <div class="card-title">Thermal Paper &amp; Print Layout</div>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="ticket_mode">Ticket Length Preset</label>
+              <select id="ticket_mode" onchange="onPresetChange()">
+                <option value="original_15cm" selected>📏 Original Long Ticket (15 cm / 58×180mm - Recommended)</option>
+                <option value="compact_8cm">📄 Compact Short Ticket (8 cm / 58×100mm)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="font_size">Font Size</label>
+              <select id="font_size">
+                <option value="23" selected>Large (11–12 pt / Original)</option>
+                <option value="25">Extra Large (13 pt)</option>
+                <option value="19">Small (8–9 pt / Compact)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="line_spacing">Line Spacing</label>
+              <select id="line_spacing">
+                <option value="1.4" selected>1.4x (Generous - Original)</option>
+                <option value="1.5">1.5x (Extra Wide)</option>
+                <option value="1.2">1.2x (Medium)</option>
+                <option value="1.0">1.0x (Tight / Compact)</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="qr_size">QR Code Width</label>
+              <select id="qr_size">
+                <option value="300" selected>Large (300 px / 80% Paper Width - Original)</option>
+                <option value="250">Medium (250 px)</option>
+                <option value="210">Small (210 px / Compact)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <!-- Financials + Staff -->
         <div class="card section">
           <div class="card-title">Financials &amp; Staff</div>
@@ -746,10 +785,10 @@
     let currentBlob = null;
     let currentFilename = "ticket.png";
 
-    // â”€â”€ API base URL: always points to Flask on port 5000 â”€â”€â”€â”€â”€â”€
+    // ── API base URL: always points to Flask on port 5000 ──────────────
     const API = "/api"; // Vercel: routes to api/ serverless functions
 
-    // â”€â”€ Random helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Random helpers ──────────────────────────────────────────────
     function randomize() {
       // 8-digit ticket number matching Rwanda format
       document.getElementById("ticket_number").value =
@@ -794,7 +833,20 @@
       toastTimer = setTimeout(() => { t.className = "toast"; }, 3500);
     }
 
-    // â”€â”€ Generate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function onPresetChange() {
+      const mode = document.getElementById("ticket_mode").value;
+      if (mode === "original_15cm") {
+        document.getElementById("font_size").value = "23";
+        document.getElementById("line_spacing").value = "1.4";
+        document.getElementById("qr_size").value = "300";
+      } else if (mode === "compact_8cm") {
+        document.getElementById("font_size").value = "19";
+        document.getElementById("line_spacing").value = "1.0";
+        document.getElementById("qr_size").value = "210";
+      }
+    }
+
+    // ── Generate ───────────────────────────────────────────────
     async function generateTicket() {
       const btn = document.getElementById("gen-btn");
       const spinner = document.getElementById("spinner");
@@ -820,6 +872,10 @@
         payment_method: v("payment_method") || document.getElementById("payment_method").value,
         transaction_id: v("transaction_id"),
         powered_by: document.getElementById("powered_by").value.trim(),
+        ticket_mode: document.getElementById("ticket_mode")?.value || "original_15cm",
+        font_size: parseInt(document.getElementById("font_size")?.value || "23", 10),
+        line_spacing: parseFloat(document.getElementById("line_spacing")?.value || "1.4"),
+        qr_size: parseInt(document.getElementById("qr_size")?.value || "300", 10),
       };
 
       // Basic validation

@@ -40,13 +40,13 @@ _WIN_REG   = "C:/Windows/Fonts/cour.ttf"
 _WIN_BOLD  = "C:/Windows/Fonts/courbd.ttf"
 _WIN_SANS  = "C:/Windows/Fonts/arialbd.ttf"
 
-# ── Font sizes (px) – tuned for 58 mm paper, 8-12 cm cut length ──────
-# At 203 dpi: 1 mm ≈ 8 px  |  2.5 mm body = 20 px  |  header 4 mm = 32 px
-SIZE_TITLE  = 30    # Company name header  (~4 mm tall)
-SIZE_NORMAL = 19    # Body rows            (~2.4 mm)
-SIZE_BOLD   = 19    # Bold rows            (same size, different weight)
-SIZE_LARGE  = 21    # Ticket No / seat     (slightly larger)
-SIZE_SMALL  = 16    # Footnotes, timestamps (~2 mm)
+# ── Font sizes (px) – tuned for 58 mm paper ───────────────────────────
+# Original ticket (15 cm long): font ~10-12 pt (23-25 px), 1.4x line spacing, 300px QR
+DEFAULT_SIZE_TITLE  = 36    # Company name header  (~4.5 mm tall)
+DEFAULT_SIZE_NORMAL = 23    # Body rows            (~2.9 mm, 11-12 pt)
+DEFAULT_SIZE_BOLD   = 23    # Bold rows
+DEFAULT_SIZE_LARGE  = 25    # Ticket No / seat
+DEFAULT_SIZE_SMALL  = 18    # Footnotes, timestamps (~2.2 mm)
 
 
 # ======================================================================
@@ -66,16 +66,26 @@ def _load(path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont
     return ImageFont.load_default()
 
 
-def load_fonts() -> dict:
+def load_fonts(scale: float = 1.0, base_size: int = 23) -> dict:
+    """Load font dictionary with dynamic scale factor."""
+    # Ratio relative to standard normal body font
+    ratio = base_size / 23.0 * scale
+    
+    size_title  = max(16, int(round(DEFAULT_SIZE_TITLE * ratio)))
+    size_normal = max(12, int(round(base_size * scale)))
+    size_bold   = size_normal
+    size_large  = max(14, int(round(DEFAULT_SIZE_LARGE * ratio)))
+    size_small  = max(10, int(round(DEFAULT_SIZE_SMALL * ratio)))
+
     return {
-        "title":      _load(_WIN_SANS,  SIZE_TITLE,  is_bold=True),
-        "reg":        _load(_CP_REG,    SIZE_NORMAL, is_bold=False),
-        "bold":       _load(_CP_BOLD,   SIZE_BOLD,   is_bold=True),
-        "large":      _load(_CP_BOLD,   SIZE_LARGE,  is_bold=True),
-        "small":      _load(_CP_REG,    SIZE_SMALL,  is_bold=False),
-        "small_bold": _load(_CP_BOLD,   SIZE_SMALL,  is_bold=True),
-        "sans":       _load(_WIN_SANS,  SIZE_NORMAL, is_bold=True),
-        "sans_small": _load(_WIN_SANS,  SIZE_SMALL,  is_bold=True),
+        "title":      _load(_WIN_SANS,  size_title,  is_bold=True),
+        "reg":        _load(_CP_REG,    size_normal, is_bold=False),
+        "bold":       _load(_CP_BOLD,   size_bold,   is_bold=True),
+        "large":      _load(_CP_BOLD,   size_large,  is_bold=True),
+        "small":      _load(_CP_REG,    size_small,  is_bold=False),
+        "small_bold": _load(_CP_BOLD,   size_small,  is_bold=True),
+        "sans":       _load(_WIN_SANS,  size_normal, is_bold=True),
+        "sans_small": _load(_WIN_SANS,  size_small,  is_bold=True),
     }
 
 
@@ -189,9 +199,13 @@ def generate_ticket(
     transaction_id: str = "39086948",
     # ── Branding ────────────────────────────────────────────────────────
     powered_by:     str = "TAP&GO/POWERED BY AC Mobility",
+    # ── Formatting / Layout Options ─────────────────────────────────────
+    ticket_mode:    str = "original_15cm",  # "original_15cm" or "compact_8cm"
+    font_size:      int = 23,               # 23 px (11-12 pt @ 203 dpi) for original, 19 px for compact
+    line_spacing:   float = 1.4,            # 1.4 line multiplier (8px gap) for original, 1.0 (3px gap) for compact
+    qr_size:        int = 300,              # 300 px (80% width) for original, 210 px for compact
     # ── Output ──────────────────────────────────────────────────────────
     output_path:    str = "bus_ticket.png",
-    qr_size:        int = 210,
 ) -> str:
     """
     Generate a Rwanda-style thermal bus ticket PNG.
@@ -200,13 +214,26 @@ def generate_ticket(
 
     Physical output at 203 dpi:
       Width  : 384 px  ≈ 48 mm  (fits 58 mm roll with margins)
-      Height : auto-cropped; main section ≈ 85-105 mm (8.5–10.5 cm)
+      Height : original mode ~1200 px ≈ 150 mm (15 cm long physical cut)
+               compact mode  ~700 px  ≈ 85 mm (8.5 cm short physical cut)
     """
 
-    F = load_fonts()
+    # Handle preset mode overrides if defaults are passed with mode
+    if ticket_mode == "compact_8cm" and font_size == 23 and line_spacing == 1.4 and qr_size == 300:
+        font_size = 19
+        line_spacing = 1.0
+        qr_size = 210
+    elif ticket_mode == "original_15cm" and (font_size is None or font_size <= 0):
+        font_size = 23
+        line_spacing = 1.4
+        qr_size = 300
+
+    # Calculate gap from line spacing factor
+    g = max(2, int(round((line_spacing - 1.0) * font_size + (3 if line_spacing <= 1.1 else 4))))
+
+    F = load_fonts(scale=1.0, base_size=font_size)
     W = TICKET_WIDTH
     P = PADDING
-    g = GAP
 
     # ── QR payload ──────────────────────────────────────────────────────
     qr_data = (
@@ -219,9 +246,9 @@ def generate_ticket(
     qr_img = build_qr(qr_data, qr_size)
 
     # ── Canvas ──────────────────────────────────────────────────────────
-    canvas = Image.new("RGB", (W, 2800), BG_COLOR)
+    canvas = Image.new("RGB", (W, 3500), BG_COLOR)
     draw   = ImageDraw.Draw(canvas)
-    y      = P + 4
+    y      = P + 6
 
     def nl(h: int, extra: int = 0):
         nonlocal y
@@ -233,10 +260,10 @@ def generate_ticket(
 
     # ── Company header – centered, large bold ────────────────────────
     title_h = draw_centered(draw, y, company_name, F["title"], W)
-    nl(title_h, extra=6)
+    nl(title_h, extra=int(g * 0.8))
 
     # ── Thin separator (between title and phone) ────────────────────
-    nl(draw_dashed(draw, y, F["small"], W), extra=2)
+    nl(draw_dashed(draw, y, F["small"], W), extra=g // 2)
 
     # ── Phone ───────────────────────────────────────────────────────
     nl(draw_left(draw, y, phone, F["reg"]))
@@ -250,7 +277,7 @@ def generate_ticket(
     nl(draw_left(draw, y, f"Ticket count: {seat_no}",    F["reg"]))
 
     # ── PLATE No & PRICE – bold + underlined (matches sample) ────────
-    y += g * 2
+    y += g
 
     ascent, descent = F["bold"].getmetrics()
     text_h = ascent + descent
@@ -258,18 +285,18 @@ def generate_ticket(
     plate_text = f"PLATE No: {plate_no}"
     draw.text((P, y), plate_text, font=F["bold"], fill=FG_COLOR)
     draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], plate_text), thickness=2)
-    nl(text_h, extra=2)
+    nl(text_h, extra=g // 2)
 
     price_text = f"PRICE: {price}"
     draw.text((P, y), price_text, font=F["bold"], fill=FG_COLOR)
     draw_underline(draw, y + ascent + 2, P, P + _tw(F["bold"], price_text), thickness=2)
-    nl(text_h, extra=6)
+    nl(text_h, extra=g)
 
     # ── QR Code – centered ───────────────────────────────────────────
-    y += g * 3
+    y += g * 2
     qr_x = (W - qr_img.width) // 2
     canvas.paste(qr_img, (qr_x, y))
-    nl(qr_img.height, extra=14)
+    nl(qr_img.height, extra=g * 2)
 
     # ── Kinyarwanda passenger note ───────────────────────────────────
     kiny_lines = [
@@ -293,10 +320,10 @@ def generate_ticket(
     y += g * 2
 
     # ── Powered-by branding ──────────────────────────────────────────
-    nl(draw_centered(draw, y, powered_by, F["sans_small"], W), extra=4)
+    nl(draw_centered(draw, y, powered_by, F["sans_small"], W), extra=g)
 
     # ── Tear-line separator ──────────────────────────────────────────
-    nl(draw_dashed(draw, y, F["small"], W), extra=4)
+    nl(draw_dashed(draw, y, F["small"], W), extra=g)
 
     # ==================================================================
     # SECTION B – PASSENGER STUB  (duplicate below tear line)
@@ -318,7 +345,7 @@ def generate_ticket(
     # ==================================================================
     # CROP & SAVE
     # ==================================================================
-    final_height = y + P + 4
+    final_height = y + P + 6
     ticket = canvas.crop((0, 0, W, final_height))
 
     # 1-bit monochrome → crisp thermal edges
@@ -329,10 +356,9 @@ def generate_ticket(
 
     w_mm = W / 203 * 25.4
     h_mm = final_height / 203 * 25.4
-    # Section A alone (above tear line) is approx first 65-70% of height
     main_mm = h_mm * 0.60
     print(f"Ticket saved  =>  {abs_path}")
-    print(f"Canvas: {W} x {final_height} px  |  {w_mm:.1f} x {h_mm:.1f} mm @ 203 dpi")
+    print(f"Canvas: {W} x {final_height} px  |  {w_mm:.1f} x {h_mm:.1f} mm ({h_mm/10:.1f} cm) @ 203 dpi")
     print(f"Main section (above tear): ~{main_mm:.0f} mm ({main_mm/10:.1f} cm)")
     return abs_path
 
@@ -360,6 +386,6 @@ if __name__ == "__main__":
         timestamp      = "Jul 16 2026 19:34",
         transaction_id = "39086948",
         powered_by     = "TAP&GO/POWERED BY AC Mobility",
+        ticket_mode    = "original_15cm",
         output_path    = "bus_ticket.png",
-        qr_size        = 210,
     )

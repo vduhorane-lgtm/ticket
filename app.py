@@ -83,8 +83,11 @@ def generate():
             timestamp      = timestamp,
             transaction_id = data.get("transaction_id",  ""),
             powered_by     = data.get("powered_by",      "TAP&GO/POWERED BY AC Mobility"),
+            ticket_mode    = data.get("ticket_mode",     "original_15cm"),
+            font_size      = int(data.get("font_size")) if data.get("font_size") else 23,
+            line_spacing   = float(data.get("line_spacing")) if data.get("line_spacing") else 1.4,
+            qr_size        = int(data.get("qr_size")) if data.get("qr_size") else 300,
             output_path    = tmp.name,
-            qr_size        = int(data.get("qr_size", 210)) if data.get("qr_size") else 210,
         )
         return send_file(
             tmp.name,
