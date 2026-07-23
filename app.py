@@ -11,9 +11,16 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 from flask import Flask, request, send_file, jsonify
 import random
 import datetime
-from ticket_generator import generate_ticket
 import tempfile
 import os
+
+# Set up path to import from api/ directory
+_here = os.path.dirname(os.path.abspath(__file__))
+_api_path = os.path.join(_here, "api")
+if _api_path not in sys.path:
+    sys.path.insert(0, _api_path)
+
+from ticket_generator import generate_ticket
 
 app = Flask(__name__)
 

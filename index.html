@@ -942,30 +942,70 @@
       if (!currentBlob) return;
       const url = URL.createObjectURL(currentBlob);
 
-      // Create a temporary iframe for printing if it doesn't exist
-      let iframe = document.getElementById("print-iframe");
-      if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.id = "print-iframe";
-        iframe.style.position = "absolute";
-        iframe.style.width = "0px";
-        iframe.style.height = "0px";
-        iframe.style.border = "none";
-        document.body.appendChild(iframe);
+      // Clean up previous print iframe if it exists
+      const oldIframe = document.getElementById("print-iframe");
+      if (oldIframe) {
+        oldIframe.parentNode.removeChild(oldIframe);
       }
 
-      // Load the image into the iframe and print it
-      iframe.src = url;
-      iframe.onload = function () {
-        setTimeout(function () {
-          try {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          } catch (e) {
-            console.error("Print failed:", e);
-          }
-        }, 200);
-      };
+      // Create a fresh hidden iframe
+      const iframe = document.createElement("iframe");
+      iframe.id = "print-iframe";
+      iframe.style.position = "absolute";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Print Ticket</title>
+          <style>
+            @media print {
+              @page {
+                margin: 0 !important;
+                size: auto;
+              }
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff;
+              }
+              img {
+                width: 100% !important;
+                max-width: 100% !important;
+                display: block;
+                margin: 0 auto;
+              }
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+            img {
+              width: 100%;
+              height: auto;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${url}" onload="setTimeout(() => { window.focus(); window.print(); }, 200);" />
+        </body>
+        </html>
+      `;
+
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      // Revoke the Object URL after 60 seconds to release memory
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 60000);
     }
 
     // â”€â”€ Download â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -66,16 +66,22 @@ def _load(path: str, size: int, is_bold: bool = False) -> ImageFont.FreeTypeFont
     return ImageFont.load_default()
 
 
-def load_fonts() -> dict:
+def load_fonts(font_size_val: int = 21) -> dict:
+    scale = font_size_val / 21.0
+    size_title = int(30 * scale)
+    size_normal = int(19 * scale)
+    size_bold = int(19 * scale)
+    size_large = int(font_size_val)
+    size_small = int(16 * scale)
     return {
-        "title":      _load(_WIN_SANS,  SIZE_TITLE,  is_bold=True),
-        "reg":        _load(_CP_REG,    SIZE_NORMAL, is_bold=False),
-        "bold":       _load(_CP_BOLD,   SIZE_BOLD,   is_bold=True),
-        "large":      _load(_CP_BOLD,   SIZE_LARGE,  is_bold=True),
-        "small":      _load(_CP_REG,    SIZE_SMALL,  is_bold=False),
-        "small_bold": _load(_CP_BOLD,   SIZE_SMALL,  is_bold=True),
-        "sans":       _load(_WIN_SANS,  SIZE_NORMAL, is_bold=True),
-        "sans_small": _load(_WIN_SANS,  SIZE_SMALL,  is_bold=True),
+        "title":      _load(_WIN_SANS,  size_title,  is_bold=True),
+        "reg":        _load(_CP_REG,    size_normal, is_bold=False),
+        "bold":       _load(_CP_BOLD,   size_bold,   is_bold=True),
+        "large":      _load(_CP_BOLD,   size_large,  is_bold=True),
+        "small":      _load(_CP_REG,    size_small,  is_bold=False),
+        "small_bold": _load(_CP_BOLD,   size_small,  is_bold=True),
+        "sans":       _load(_WIN_SANS,  size_normal, is_bold=True),
+        "sans_small": _load(_WIN_SANS,  size_small,  is_bold=True),
     }
 
 
@@ -189,9 +195,15 @@ def generate_ticket(
     transaction_id: str = "39086948",
     # ── Branding ────────────────────────────────────────────────────────
     powered_by:     str = "TAP&GO/POWERED BY AC Mobility",
+    # ── Layout Settings ─────────────────────────────────────────────────
+    paper_width:    str = "57mm",
+    ticket_mode:    str = "original_15cm",
+    font_size:      int = 21,
+    line_spacing:   float = 1.4,
     # ── Output ──────────────────────────────────────────────────────────
     output_path:    str = "bus_ticket.png",
     qr_size:        int = 210,
+    **kwargs,
 ) -> str:
     """
     Generate a Rwanda-style thermal bus ticket PNG.
@@ -203,10 +215,10 @@ def generate_ticket(
       Height : auto-cropped; main section ≈ 85-105 mm (8.5–10.5 cm)
     """
 
-    F = load_fonts()
-    W = TICKET_WIDTH
+    F = load_fonts(font_size)
+    W = 576 if paper_width == "80mm" else 384
     P = PADDING
-    g = GAP
+    g = max(2, int(3 * (font_size / 21.0)))
 
     # ── QR payload ──────────────────────────────────────────────────────
     qr_data = (
@@ -225,7 +237,8 @@ def generate_ticket(
 
     def nl(h: int, extra: int = 0):
         nonlocal y
-        y += h + g + extra
+        line_gap = int(h * (line_spacing - 1.0))
+        y += h + max(0, line_gap) + extra
 
     # ==================================================================
     # SECTION A – MAIN TICKET  (agent copy)
@@ -295,25 +308,26 @@ def generate_ticket(
     # ── Powered-by branding ──────────────────────────────────────────
     nl(draw_centered(draw, y, powered_by, F["sans_small"], W), extra=4)
 
-    # ── Tear-line separator ──────────────────────────────────────────
-    nl(draw_dashed(draw, y, F["small"], W), extra=4)
+    if ticket_mode != "compact_8cm":
+        # ── Tear-line separator ──────────────────────────────────────────
+        nl(draw_dashed(draw, y, F["small"], W), extra=4)
 
-    # ==================================================================
-    # SECTION B – PASSENGER STUB  (duplicate below tear line)
-    # ==================================================================
+        # ==================================================================
+        # SECTION B – PASSENGER STUB  (duplicate below tear line)
+        # ==================================================================
 
-    nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
-    nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
-    nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
-    nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
-    nl(draw_left(draw, y, f"PLATE No: {plate_no}",        F["reg"]))
-    nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"]))
-    nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"]))
-    nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"]))
-    nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
-    nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"]))
+        nl(draw_left(draw, y, f"NAMES: {customer}",     F["reg"]))
+        nl(draw_left(draw, y, f"FROM: {from_location}",  F["reg"]))
+        nl(draw_left(draw, y, f"TO: {to_location}",      F["reg"]))
+        nl(draw_left(draw, y, f"TRAVEL TIME: {dep_date} {dep_time}", F["reg"]))
+        nl(draw_left(draw, y, f"PLATE No: {plate_no}",        F["reg"]))
+        nl(draw_left(draw, y, f"PRICE: {price}",              F["reg"]))
+        nl(draw_left(draw, y, f"TICKET ID: {ticket_number}",  F["reg"]))
+        nl(draw_left(draw, y, f"Ticket count: {seat_no}",     F["reg"]))
+        nl(draw_left(draw, y, f"AGENT NAME: {cashier}({payment_method})", F["reg"]))
+        nl(draw_left(draw, y, f"Printed at: {timestamp}",     F["reg"]))
 
-    y += g * 2
+        y += g * 2
 
     # ==================================================================
     # CROP & SAVE

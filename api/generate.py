@@ -53,8 +53,9 @@ class handler(BaseHTTPRequestHandler):
         now       = datetime.datetime.now()
         timestamp = data.get("timestamp") or now.strftime("%Y-%m-%d %H:%M:%S")
 
-        # 2. Write to /tmp — the only writable path in Vercel's Lambda runtime
-        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False, dir="/tmp")
+        # 2. Write to /tmp (Vercel) or fallback to system default temp dir (Windows/Local)
+        tmp_dir = "/tmp" if os.path.exists("/tmp") else tempfile.gettempdir()
+        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False, dir=tmp_dir)
         tmp.close()
 
         try:
@@ -76,8 +77,12 @@ class handler(BaseHTTPRequestHandler):
                 timestamp      = timestamp,
                 transaction_id = data.get("transaction_id",  ""),
                 powered_by     = data.get("powered_by",      "TAP&GO/POWERED BY AC Mobility"),
+                paper_width    = data.get("paper_width",     "57mm"),
+                ticket_mode    = data.get("ticket_mode",     "original_15cm"),
+                font_size      = int(data.get("font_size")) if data.get("font_size") else 21,
+                line_spacing   = float(data.get("line_spacing")) if data.get("line_spacing") else 1.4,
+                qr_size        = int(data.get("qr_size")) if data.get("qr_size") else 325,
                 output_path    = tmp.name,
-                qr_size        = int(data.get("qr_size", 210)) if data.get("qr_size") else 210,
             )
 
             with open(tmp.name, "rb") as f:

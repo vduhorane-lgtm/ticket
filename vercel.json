@@ -2,7 +2,8 @@
   "functions": {
     "api/generate.py": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "api/fonts/**"
     },
     "api/random_ticket.py": {
       "memory": 256,
